@@ -59,8 +59,10 @@ export default function App() {
     <ToastProvider>
       <AuthProvider>
         <Routes>
-          {/* public */}
-          <Route path="/" element={<Landing />} />
+          {/* Login is the app's startup screen. Keep the public landing page at
+              /welcome for visitors who want product information first. */}
+          <Route path="/" element={<Login />} />
+          <Route path="/welcome" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 

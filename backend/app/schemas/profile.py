@@ -194,9 +194,12 @@ class StudentSkillOut(BaseModel):
 # Step 4 - projects
 # --------------------------------------------------------------------------
 class ProjectIn(BaseModel):
+    """One project. The section is optional, but an entry that exists must
+    carry a title and a description - a bare title is not evidence."""
+
     id: int | None = None
     title: str = Field(min_length=2, max_length=180)
-    description: str | None = Field(default=None, max_length=4000)
+    description: str = Field(min_length=10, max_length=4000)
     contribution: str | None = Field(default=None, max_length=2000)
     category: str | None = Field(default=None, max_length=80)
     duration_months: int | None = Field(default=None, ge=0, le=120)
@@ -208,12 +211,19 @@ class ProjectIn(BaseModel):
     live_url: str | None = None
     technologies: list[str] = Field(default_factory=list, max_length=40)
 
-    _clean = field_validator(
-        "description", "contribution", "category", mode="before"
-    )(_clean_optional_str)
+    _clean = field_validator("contribution", "category", mode="before")(
+        _clean_optional_str
+    )
     _clean_urls = field_validator("github_url", "live_url", mode="before")(
         _clean_optional_url
     )
+
+    @field_validator("description", mode="before")
+    @classmethod
+    def _require_description(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return value.strip()
+        return value
 
     @field_validator("technologies")
     @classmethod
@@ -252,11 +262,15 @@ class ProjectOut(ORMModel):
 # Step 5 - experience, certifications, achievements
 # --------------------------------------------------------------------------
 class ExperienceIn(BaseModel):
+    """One experience entry. The section is optional, but an entry that exists
+    must say where, what and what you did - the scoring engine reads the
+    description, so an entry without one cannot be assessed."""
+
     id: int | None = None
     experience_type: str = "internship"
     organization: str = Field(min_length=1, max_length=180)
     title: str = Field(min_length=1, max_length=180)
-    description: str | None = Field(default=None, max_length=4000)
+    description: str = Field(min_length=10, max_length=4000)
     location: str | None = Field(default=None, max_length=120)
     start_date: dt.date | None = None
     end_date: dt.date | None = None
@@ -264,7 +278,14 @@ class ExperienceIn(BaseModel):
     duration_months: int | None = Field(default=None, ge=0, le=600)
     skills_used: list[str] = Field(default_factory=list, max_length=40)
 
-    _clean = field_validator("description", "location", mode="before")(_clean_optional_str)
+    _clean = field_validator("location", mode="before")(_clean_optional_str)
+
+    @field_validator("description", mode="before")
+    @classmethod
+    def _require_description(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return value.strip()
+        return value
 
     @field_validator("experience_type")
     @classmethod

@@ -2,18 +2,30 @@
 
 Design rules this module enforces:
 
-* One rubric per role. Weights, expectations and keywords come from the
+* **One rubric per role.** Weights, expectations and keywords come from the
   ``job_roles`` / ``role_required_skills`` rows, never from hardcoded formulas.
-* Nothing is random. The same profile and the same rubric always produce the
-  same score.
-* Every point is attributable: each component returns an explanation plus the
-  raw details behind it, and these are persisted so the score stays explainable
-  after the fact.
-* A claimed skill earns less than a skill demonstrated in a project or
-  internship (see ``CLAIM_ONLY_CREDIT``).
-* Missing optional information is handled explicitly. Where absence cannot be
-  judged fairly, the component returns a neutral ratio and says so, rather than
-  silently scoring zero.
+* **Nothing is random.** The same profile and the same rubric always produce
+  the same score.
+* **Every point is attributable.** Each component returns an explanation plus
+  the raw details behind it, and these are persisted so the score stays
+  explainable after the fact.
+* **Claims are worth less than evidence.** A listed skill earns
+  ``CLAIM_ONLY_CREDIT`` of what a skill demonstrated in a project or internship
+  earns.
+* **Optional sections are never a penalty.** Projects, experience and
+  certifications are optional at onboarding, so a section the student does not
+  have is *removed from the denominator* and its weight is redistributed over
+  the evidence they do have - it is not scored as a zero. A fresher with no
+  internship is measured on their projects, not punished for the gap.
+* **Adding something can never cost you points.** The evidence pool is the
+  best result obtainable by ignoring at most one weak optional kind, so a
+  modest position of responsibility can only help (see
+  :func:`_combine_evidence`).
+* **Quality, not quantity.** Components score the best few pieces of work on
+  their relevance and depth. A fourth thin project adds nothing.
+* **No double counting.** Role keywords that merely restate a rubric skill are
+  dropped from domain knowledge, which measures the concepts the skills rubric
+  does *not* already test.
 
 The engine is deliberately separate from the ORM write path: :func:`score_role`
 is pure, and :func:`recalculate_assessments` handles persistence. Swapping in a
@@ -52,13 +64,27 @@ from app.models.catalog import PROFICIENCY_RANK
 
 logger = get_logger(__name__)
 
-ENGINE_VERSION = "1.0.0"
+ENGINE_VERSION = "2.0.0"
 
 # A skill the student claims but has not demonstrated earns this share of the
 # points an evidence-backed skill of the same proficiency would earn.
 CLAIM_ONLY_CREDIT = 0.55
 # Importance multipliers applied on top of each requirement's own weight.
 IMPORTANCE_MULTIPLIER = {"required": 1.0, "preferred": 0.45}
+
+# Components that are optional at onboarding and share one evidence pool.
+EVIDENCE_COMPONENTS = ("projects", "experience", "certifications")
+# An optional kind scoring below this may be ignored rather than averaged in,
+# so that a weak entry never drags the score below having nothing at all.
+WEAK_EVIDENCE_THRESHOLD = 0.5
+# Evidence from a single kind cannot reach the full pool: projects and
+# internships prove different things. Applied symmetrically, so neither a
+# projects-only nor an internships-only student is singled out.
+SINGLE_SOURCE_CAP = 0.92
+# A position of responsibility is real experience, but not hands-on work.
+POR_CREDIT = 0.5
+# Experience and project quality are read off at most this many entries.
+MAX_SCORED_SLOTS = 4
 
 BANDS: tuple[tuple[float, str], ...] = (
     (85.0, "Placement Ready"),
@@ -78,7 +104,22 @@ COMPONENT_LABELS = {
     "resume_quality": "Resume Quality",
 }
 
-_WORD = re.compile(r"[a-z0-9+#.]+")
+COMPONENT_ORDER = (
+    "skills",
+    "projects",
+    "experience",
+    "academics",
+    "domain_knowledge",
+    "certifications",
+    "resume_quality",
+)
+
+_METRIC_RE = re.compile(
+    r"(\d+(?:[.,]\d+)?\s*(?:%|percent|x\b|k\b|lakh|crore|million|mn\b|bn\b|billion|"
+    r"users?|teams?|students?|participants?|months?|hours?|ms\b|seconds?)|[$₹]\s?\d|\d+\+)",
+    re.I,
+)
+_WORD_SPLIT_RE = re.compile(r"[^a-z0-9+#.]+")
 
 
 def band_for(score: float) -> str:
@@ -118,6 +159,14 @@ class ProjectFact:
     has_link: bool
     duration_months: int | None
 
+    @property
+    def text(self) -> str:
+        return f"{self.title} {self.description} {self.contribution} {' '.join(self.tech_names)}"
+
+    @property
+    def metric_count(self) -> int:
+        return len(_METRIC_RE.findall(f"{self.description} {self.contribution}"))
+
 
 @dataclass(slots=True)
 class ExperienceFact:
@@ -128,6 +177,29 @@ class ExperienceFact:
     description: str
     duration_months: int
     skills_used: list[str]
+
+    @property
+    def text(self) -> str:
+        return f"{self.title} {self.organization} {self.description} {' '.join(self.skills_used)}"
+
+    @property
+    def metric_count(self) -> int:
+        return len(_METRIC_RE.findall(self.description))
+
+    @property
+    def is_work(self) -> bool:
+        return self.experience_type in ("internship", "job")
+
+
+@dataclass(slots=True)
+class EducationFact:
+    level: str
+    institution: str
+    degree: str | None
+    score: float | None
+    has_years: bool
+    coursework: list[str]
+    achievements: bool
 
 
 @dataclass(slots=True)
@@ -144,6 +216,7 @@ class ProfileSnapshot:
     experiences: list[ExperienceFact]
     certifications: list[dict[str, Any]]
     achievements: list[dict[str, Any]]
+    education: list[EducationFact]
     coursework: list[str]
     academic_achievements: int
     resume_quality: float | None
@@ -155,16 +228,20 @@ class ProfileSnapshot:
     def __post_init__(self) -> None:
         self.skills_by_id = {skill.skill_id: skill for skill in self.skills}
         parts = [skill.name for skill in self.skills]
-        parts += [p.title + " " + p.description + " " + p.contribution for p in self.projects]
-        parts += [" ".join(p.tech_names) for p in self.projects]
-        parts += [
-            f"{e.title} {e.organization} {e.description} {' '.join(e.skills_used)}"
-            for e in self.experiences
-        ]
+        parts += [project.text for project in self.projects]
+        parts += [experience.text for experience in self.experiences]
         parts += [str(c.get("name", "")) for c in self.certifications]
         parts += [str(a.get("title", "")) for a in self.achievements]
         parts += self.coursework
         self.searchable_text = " ".join(parts).lower()
+
+    @property
+    def work_experiences(self) -> list[ExperienceFact]:
+        return [e for e in self.experiences if e.is_work]
+
+    @property
+    def responsibility_experiences(self) -> list[ExperienceFact]:
+        return [e for e in self.experiences if not e.is_work]
 
     @property
     def internship_count(self) -> int:
@@ -176,11 +253,7 @@ class ProfileSnapshot:
 
     @property
     def total_experience_months(self) -> int:
-        return sum(
-            e.duration_months
-            for e in self.experiences
-            if e.experience_type in ("internship", "job")
-        )
+        return sum(e.duration_months for e in self.work_experiences)
 
 
 def _months_between(start: dt.date | None, end: dt.date | None, is_current: bool) -> int:
@@ -265,12 +338,24 @@ def build_snapshot(db: Session, user: User) -> ProfileSnapshot:
         for row in db.scalars(select(Achievement).where(Achievement.user_id == user.id))
     ]
 
+    education: list[EducationFact] = []
     coursework: list[str] = []
     academic_achievements = 0
     for row in db.scalars(select(AcademicDetail).where(AcademicDetail.user_id == user.id)):
         coursework.extend(row.relevant_coursework or [])
         if row.achievements:
             academic_achievements += 1
+        education.append(
+            EducationFact(
+                level=row.level,
+                institution=row.institution,
+                degree=row.degree_or_program,
+                score=row.score,
+                has_years=bool(row.start_year or row.end_year),
+                coursework=list(row.relevant_coursework or []),
+                achievements=bool(row.achievements),
+            )
+        )
 
     resume = db.scalar(
         select(Resume)
@@ -289,6 +374,7 @@ def build_snapshot(db: Session, user: User) -> ProfileSnapshot:
         experiences=experiences,
         certifications=certifications,
         achievements=achievements,
+        education=education,
         coursework=coursework,
         academic_achievements=academic_achievements,
         resume_quality=resume.quality_score if resume else None,
@@ -307,6 +393,9 @@ class ComponentResult:
     ratio: float
     explanation: str
     details: dict[str, Any] = field(default_factory=dict)
+    # False when the student does not have this optional section at all. The
+    # component then carries no weight and its share moves elsewhere.
+    applicable: bool = True
 
     @property
     def points(self) -> float:
@@ -348,16 +437,21 @@ class RoleScoreResult:
 def _keyword_hits(text: str, keywords: list[str]) -> tuple[list[str], list[str]]:
     hits: list[str] = []
     misses: list[str] = []
+    lowered = text.lower()
     for keyword in keywords:
-        if keyword.lower() in text:
+        if keyword.lower() in lowered:
             hits.append(keyword)
         else:
             misses.append(keyword)
     return hits, misses
 
 
+def _mean(values: list[float]) -> float:
+    return sum(values) / len(values) if values else 0.0
+
+
 # --------------------------------------------------------------------------
-# Components
+# Skills
 # --------------------------------------------------------------------------
 def _score_skills(
     snapshot: ProfileSnapshot, role: JobRole
@@ -405,7 +499,11 @@ def _score_skills(
                     recommendation=(
                         f"Learn {skill_name} to at least "
                         f"{requirement.expected_proficiency} level"
-                        + (" - it is a core requirement for this role." if requirement.importance == "required" else ".")
+                        + (
+                            " - it is a core requirement for this role."
+                            if requirement.importance == "required"
+                            else "."
+                        )
                     ),
                 )
             )
@@ -500,71 +598,88 @@ def _score_skills(
     )
 
 
+# --------------------------------------------------------------------------
+# Projects
+# --------------------------------------------------------------------------
 def _project_relevance(project: ProjectFact, role: JobRole, role_skill_ids: set[int]) -> float:
-    """0..1 relevance of one project to one role."""
+    """0..1 relevance of one project to one role.
+
+    Skill overlap is deliberately the smaller share: the skills component
+    already scores those same skills, and weighting them heavily here would
+    count one fact twice.
+    """
     score = 0.0
     if role_skill_ids and project.skill_ids:
         overlap = len(project.skill_ids & role_skill_ids)
-        score += min(overlap / 2, 1.0) * 0.6
+        score += min(overlap / 2, 1.0) * 0.35
     categories = [c.lower() for c in (role.relevant_project_categories or [])]
     if project.category and any(c in project.category.lower() for c in categories):
         score += 0.25
-    blob = f"{project.title} {project.description} {project.contribution} {' '.join(project.tech_names)}".lower()
-    hits, _ = _keyword_hits(blob, role.resume_keywords or [])
+    hits, _ = _keyword_hits(project.text, role.resume_keywords or [])
     if hits:
-        score += min(len(hits) / 3, 1.0) * 0.3
+        score += min(len(hits) / 3, 1.0) * 0.40
     return min(score, 1.0)
+
+
+def _project_depth(project: ProjectFact) -> float:
+    """0..1 on how substantial the entry is, independent of the role."""
+    signals = [
+        min(len(project.description) / 240.0, 1.0),
+        1.0 if project.contribution.strip() else 0.0,
+        min(project.metric_count / 2.0, 1.0),
+        1.0 if project.tech_names else 0.0,
+        1.0 if project.has_link else 0.0,
+    ]
+    # Description and measurable outcomes carry more than a link does.
+    weights = [0.30, 0.20, 0.25, 0.15, 0.10]
+    return sum(signal * weight for signal, weight in zip(signals, weights))
 
 
 def _score_projects(snapshot: ProfileSnapshot, role: JobRole) -> ComponentResult:
     weight = role.weight_projects
+    expected = min(max(role.expected_projects, 1), MAX_SCORED_SLOTS)
     role_skill_ids = {r.skill_id for r in role.required_skills}
-    expected = max(role.expected_projects, 1)
 
     if not snapshot.projects:
         return ComponentResult(
             "projects",
             weight,
             0.0,
-            f"No projects added yet. This role expects about {expected} relevant "
-            "project(s) as practical evidence.",
-            {"count": 0, "expected": expected, "relevant": []},
+            "No projects on file. Projects are optional, so this weight has been "
+            "moved to the evidence you do have.",
+            {"count": 0, "expected": expected, "projects": []},
+            applicable=False,
         )
 
-    scored = []
+    scored: list[dict[str, Any]] = []
     for project in snapshot.projects:
         relevance = _project_relevance(project, role, role_skill_ids)
-        depth_signals = [
-            len(project.description) >= 120,
-            bool(project.contribution),
-            project.has_link,
-            bool(project.tech_names),
-        ]
-        depth = sum(1 for s in depth_signals if s) / len(depth_signals)
+        depth = _project_depth(project)
         scored.append(
             {
                 "id": project.id,
                 "title": project.title,
                 "relevance": round(relevance, 3),
                 "depth": round(depth, 3),
+                "quality": round(0.6 * relevance + 0.4 * depth, 3),
                 "category": project.category,
             }
         )
 
-    scored.sort(key=lambda item: item["relevance"], reverse=True)
+    scored.sort(key=lambda item: item["quality"], reverse=True)
     top = scored[:expected]
-    relevance_ratio = sum(item["relevance"] for item in top) / expected
-    depth_ratio = sum(item["depth"] for item in top) / max(len(top), 1)
-    coverage_ratio = min(len(snapshot.projects) / expected, 1.0)
-
-    ratio = 0.55 * min(relevance_ratio, 1.0) + 0.25 * coverage_ratio + 0.20 * depth_ratio
+    # Quality of the best work, not a count of entries: a fourth thin project
+    # adds nothing, and one excellent project is nearly as good as three.
+    quality_ratio = _mean([item["quality"] for item in top])
+    breadth = min(len(scored) / expected, 1.0)
+    ratio = quality_ratio * (0.85 + 0.15 * breadth)
     strongly_relevant = [item for item in scored if item["relevance"] >= 0.5]
 
     explanation = (
-        f"{len(snapshot.projects)} project(s) on file, {len(strongly_relevant)} clearly "
-        f"relevant to this role (expected: {expected}). Relevance is judged on the "
-        "technologies used, project category and role keywords; depth on description, "
-        "stated contribution and links."
+        f"Judged on your {min(len(scored), expected)} strongest project(s) of "
+        f"{len(scored)} ({len(strongly_relevant)} clearly relevant to this role). "
+        "Relevance comes from technologies, category and role keywords; depth from "
+        "the description, your stated contribution, measurable outcomes and links."
     )
 
     return ComponentResult(
@@ -573,120 +688,123 @@ def _score_projects(snapshot: ProfileSnapshot, role: JobRole) -> ComponentResult
         round(min(ratio, 1.0), 4),
         explanation,
         {
-            "count": len(snapshot.projects),
+            "count": len(scored),
             "expected": expected,
             "relevant_count": len(strongly_relevant),
             "projects": scored[:8],
-            "relevance_ratio": round(min(relevance_ratio, 1.0), 3),
-            "depth_ratio": round(depth_ratio, 3),
+            "quality_ratio": round(quality_ratio, 3),
+            "breadth": round(breadth, 3),
         },
     )
 
 
-def _score_academics(snapshot: ProfileSnapshot, role: JobRole) -> ComponentResult:
-    weight = role.weight_academics
-    floor = role.min_cgpa
-    target = max(role.target_cgpa, floor + 0.1)
+# --------------------------------------------------------------------------
+# Experience
+# --------------------------------------------------------------------------
+def _experience_quality(
+    item: ExperienceFact, role: JobRole, role_skill_names: set[str]
+) -> tuple[float, float, float]:
+    """``(quality, relevance, depth)`` for one experience entry."""
+    keywords = role.resume_keywords or []
+    hits, _ = _keyword_hits(item.text, keywords)
+    keyword_ratio = min(len(hits) / 3, 1.0) if keywords else 0.0
 
-    if not snapshot.cgpa_provided or snapshot.cgpa_on_10 is None:
-        # CGPA is optional at onboarding. Absence is reported, not punished.
-        return ComponentResult(
-            "academics",
-            weight,
-            0.5,
-            "CGPA was not provided, so this component uses a neutral 50% placeholder "
-            "rather than a penalty. Add your CGPA for an accurate score.",
-            {"cgpa_provided": False, "min_cgpa": floor, "target_cgpa": target},
-        )
+    words = {w for w in _WORD_SPLIT_RE.split(item.text.lower()) if w}
+    skill_overlap = len(words & role_skill_names)
+    skill_ratio = min(skill_overlap / 2, 1.0) if role_skill_names else 0.0
+    relevance = max(keyword_ratio, 0.0) * 0.65 + skill_ratio * 0.35
+    if not keywords and not role_skill_names:
+        relevance = 0.5
 
-    cgpa = snapshot.cgpa_on_10
-    if cgpa >= target:
-        cgpa_ratio = 1.0
-    elif cgpa >= floor:
-        cgpa_ratio = 0.6 + 0.4 * (cgpa - floor) / (target - floor)
-    else:
-        # Below the role's floor still earns partial credit proportionally.
-        cgpa_ratio = 0.6 * max(cgpa / floor, 0.0) if floor > 0 else 0.0
+    depth_signals = [
+        min(len(item.description) / 200.0, 1.0),
+        min(item.metric_count / 2.0, 1.0),
+        min(item.duration_months / 2.0, 1.0) if item.duration_months else 0.0,
+    ]
+    depth = sum(s * w for s, w in zip(depth_signals, (0.40, 0.35, 0.25)))
 
-    achievement_ratio = min(snapshot.academic_achievements / 1, 1.0)
-    coursework_ratio = min(len(snapshot.coursework) / 4, 1.0)
-    ratio = 0.75 * cgpa_ratio + 0.15 * achievement_ratio + 0.10 * coursework_ratio
-
-    explanation = (
-        f"CGPA {cgpa}/10 against this role's floor of {floor} and target of {target}. "
-        f"{snapshot.academic_achievements} academic achievement entr(ies) and "
-        f"{len(snapshot.coursework)} relevant course(s) recorded."
-    )
-
-    return ComponentResult(
-        "academics",
-        weight,
-        round(min(ratio, 1.0), 4),
-        explanation,
-        {
-            "cgpa_provided": True,
-            "cgpa_on_10": cgpa,
-            "min_cgpa": floor,
-            "target_cgpa": target,
-            "cgpa_ratio": round(cgpa_ratio, 3),
-            "coursework_count": len(snapshot.coursework),
-            "academic_achievements": snapshot.academic_achievements,
-        },
-    )
+    quality = 0.55 * min(relevance, 1.0) + 0.45 * depth
+    return min(quality, 1.0), min(relevance, 1.0), depth
 
 
 def _score_experience(snapshot: ProfileSnapshot, role: JobRole) -> ComponentResult:
     weight = role.weight_experience
-    expected = max(role.expected_internships, 1)
-    expected_months = expected * 2
+    expected = min(max(role.expected_internships, 1), MAX_SCORED_SLOTS)
+    role_skill_names = {
+        word
+        for r in role.required_skills
+        for word in _WORD_SPLIT_RE.split(r.skill.name.lower())
+        if len(word) > 2
+    }
 
-    relevant = 0
-    relevance_scores: list[float] = []
-    for exp in snapshot.experiences:
-        if exp.experience_type not in ("internship", "job"):
-            continue
-        blob = f"{exp.title} {exp.organization} {exp.description} {' '.join(exp.skills_used)}".lower()
-        hits, _ = _keyword_hits(blob, role.resume_keywords or [])
-        relevance = min(len(hits) / 2, 1.0) if role.resume_keywords else 0.5
-        relevance_scores.append(relevance)
-        if relevance >= 0.5:
-            relevant += 1
+    work = snapshot.work_experiences
+    responsibilities = snapshot.responsibility_experiences
 
-    count = snapshot.internship_count + snapshot.job_count
-    por_count = sum(
-        1 for e in snapshot.experiences if e.experience_type == "position_of_responsibility"
+    if not work and not responsibilities:
+        return ComponentResult(
+            "experience",
+            weight,
+            0.0,
+            "No internships, jobs or positions of responsibility on file. "
+            "Experience is optional, so this weight has been moved to the "
+            "evidence you do have rather than scored as a zero.",
+            {
+                "internships": 0,
+                "jobs": 0,
+                "positions_of_responsibility": 0,
+                "expected_internships": expected,
+            },
+            applicable=False,
+        )
+
+    scored: list[dict[str, Any]] = []
+    for item in work:
+        quality, relevance, depth = _experience_quality(item, role, role_skill_names)
+        scored.append(
+            {
+                "id": item.id,
+                "title": item.title,
+                "organization": item.organization,
+                "type": item.experience_type,
+                "relevance": round(relevance, 3),
+                "depth": round(depth, 3),
+                "quality": round(quality, 3),
+                "months": item.duration_months,
+            }
+        )
+    for item in responsibilities:
+        quality, relevance, depth = _experience_quality(item, role, role_skill_names)
+        scored.append(
+            {
+                "id": item.id,
+                "title": item.title,
+                "organization": item.organization,
+                "type": item.experience_type,
+                "relevance": round(relevance, 3),
+                "depth": round(depth, 3),
+                # A position of responsibility is real, but it is not the same
+                # evidence an employer-supervised role gives.
+                "quality": round(quality * POR_CREDIT, 3),
+                "months": item.duration_months,
+            }
+        )
+
+    scored.sort(key=lambda item: item["quality"], reverse=True)
+    top = scored[:expected]
+    quality_ratio = _mean([item["quality"] for item in top])
+    breadth = min(len(scored) / expected, 1.0)
+    ratio = quality_ratio * (0.85 + 0.15 * breadth)
+
+    relevant = sum(1 for item in scored if item["relevance"] >= 0.5)
+    por_count = len(responsibilities)
+    explanation = (
+        f"{snapshot.internship_count} internship(s), {snapshot.job_count} job(s) and "
+        f"{por_count} position(s) of responsibility, about "
+        f"{snapshot.total_experience_months} month(s) of hands-on work; {relevant} "
+        f"judged relevant to this role. Scored on your {min(len(scored), expected)} "
+        "strongest entr(ies) - depth and measurable outcomes, not entry count. "
+        f"Positions of responsibility count at {int(POR_CREDIT * 100)}% of a role."
     )
-
-    if count == 0:
-        ratio = 0.08 * min(por_count, 2) / 2  # leadership alone is a weak signal
-        explanation = (
-            "No internships or work experience recorded. This role typically expects "
-            f"{expected} internship(s). "
-            + (
-                f"{por_count} position(s) of responsibility give a small amount of credit."
-                if por_count
-                else ""
-            )
-        )
-    else:
-        count_ratio = min(count / expected, 1.0)
-        duration_ratio = min(snapshot.total_experience_months / expected_months, 1.0)
-        relevance_ratio = (
-            sum(relevance_scores) / len(relevance_scores) if relevance_scores else 0.0
-        )
-        por_ratio = min(por_count / 2, 1.0)
-        ratio = (
-            0.40 * count_ratio
-            + 0.25 * duration_ratio
-            + 0.25 * relevance_ratio
-            + 0.10 * por_ratio
-        )
-        explanation = (
-            f"{snapshot.internship_count} internship(s) and {snapshot.job_count} role(s) "
-            f"totalling about {snapshot.total_experience_months} month(s); {relevant} judged "
-            f"relevant to this role. Expected: {expected} internship(s) "
-            f"(~{expected_months} months)."
-        )
 
     return ComponentResult(
         "experience",
@@ -700,56 +818,173 @@ def _score_experience(snapshot: ProfileSnapshot, role: JobRole) -> ComponentResu
             "total_months": snapshot.total_experience_months,
             "relevant_count": relevant,
             "expected_internships": expected,
+            "entries": scored[:8],
+            "quality_ratio": round(quality_ratio, 3),
+            "work_experience_present": bool(work),
         },
     )
 
 
+# --------------------------------------------------------------------------
+# Certifications
+# --------------------------------------------------------------------------
 def _score_certifications(snapshot: ProfileSnapshot, role: JobRole) -> ComponentResult:
     weight = role.weight_certifications
     expected = max(role.expected_certifications, 1)
     count = len(snapshot.certifications)
-
-    relevant = 0
-    for cert in snapshot.certifications:
-        blob = f"{cert.get('name', '')} {cert.get('issuer') or ''} {' '.join(cert.get('related_skills') or [])}".lower()
-        hits, _ = _keyword_hits(blob, role.resume_keywords or [])
-        if hits:
-            relevant += 1
 
     if count == 0:
         return ComponentResult(
             "certifications",
             weight,
             0.0,
-            f"No certifications recorded. This role's rubric expects about {expected}; "
-            "a relevant certification is the quickest way to earn these points.",
+            "No certifications on file. Certifications are optional, so this weight "
+            "has been moved to the evidence you do have.",
             {"count": 0, "expected": expected, "relevant": 0},
+            applicable=False,
         )
 
-    count_ratio = min(count / expected, 1.0)
+    relevant = 0
+    for cert in snapshot.certifications:
+        blob = (
+            f"{cert.get('name', '')} {cert.get('issuer') or ''} "
+            f"{' '.join(cert.get('related_skills') or [])}"
+        )
+        hits, _ = _keyword_hits(blob, role.resume_keywords or [])
+        if hits:
+            relevant += 1
+
+    # Relevance first: three unrelated certificates are not worth one relevant
+    # one, so the count only tops up a genuinely relevant set.
     relevance_ratio = relevant / count
-    ratio = 0.6 * count_ratio + 0.4 * relevance_ratio
+    count_ratio = min(relevant / expected, 1.0) if relevant else 0.0
+    ratio = 0.65 * relevance_ratio + 0.35 * count_ratio
 
     return ComponentResult(
         "certifications",
         weight,
         round(min(ratio, 1.0), 4),
-        f"{count} certification(s), {relevant} relevant to this role (expected: {expected}).",
+        f"{count} certification(s), {relevant} relevant to this role "
+        f"(this rubric expects about {expected}). Relevance matters more than count.",
         {"count": count, "expected": expected, "relevant": relevant},
     )
 
 
+# --------------------------------------------------------------------------
+# Academics
+# --------------------------------------------------------------------------
+def _score_academics(snapshot: ProfileSnapshot, role: JobRole) -> ComponentResult:
+    weight = role.weight_academics
+    floor = role.min_cgpa
+    target = max(role.target_cgpa, floor + 0.1)
+
+    # Sub-weights are renormalised over the parts the student actually
+    # provided, so an omitted CGPA moves its share onto the record and
+    # coursework instead of scoring zero or an arbitrary placeholder.
+    parts: list[tuple[str, float, float]] = []
+
+    if snapshot.cgpa_provided and snapshot.cgpa_on_10 is not None:
+        cgpa = snapshot.cgpa_on_10
+        if cgpa >= target:
+            cgpa_ratio = 1.0
+        elif cgpa >= floor:
+            cgpa_ratio = 0.6 + 0.4 * (cgpa - floor) / (target - floor)
+        else:
+            cgpa_ratio = 0.6 * max(cgpa / floor, 0.0) if floor > 0 else 0.0
+        parts.append(("cgpa", 0.70, min(cgpa_ratio, 1.0)))
+    else:
+        cgpa_ratio = None
+
+    record_signals = [
+        1.0 if snapshot.education else 0.0,
+        1.0 if any(e.degree for e in snapshot.education) else 0.0,
+        1.0 if any(e.has_years for e in snapshot.education) else 0.0,
+        1.0 if len(snapshot.education) >= 2 else 0.0,
+    ]
+    parts.append(("record", 0.15, _mean(record_signals)))
+
+    if snapshot.coursework or snapshot.academic_achievements:
+        enrichment = _mean(
+            [
+                min(len(snapshot.coursework) / 4.0, 1.0),
+                min(snapshot.academic_achievements / 1.0, 1.0),
+            ]
+        )
+        parts.append(("enrichment", 0.15, enrichment))
+
+    total_weight = sum(part[1] for part in parts)
+    ratio = sum(part[1] * part[2] for part in parts) / total_weight if total_weight else 0.0
+
+    if cgpa_ratio is None:
+        explanation = (
+            "CGPA was not provided, so it is left out of this component entirely "
+            "and its share is carried by your education record and coursework - "
+            "no placeholder, no penalty. Add your CGPA for a sharper score."
+        )
+    else:
+        explanation = (
+            f"CGPA {snapshot.cgpa_on_10}/10 against this role's floor of {floor} and "
+            f"target of {target}. {len(snapshot.education)} education record(s), "
+            f"{len(snapshot.coursework)} relevant course(s) and "
+            f"{snapshot.academic_achievements} academic achievement entr(ies)."
+        )
+
+    return ComponentResult(
+        "academics",
+        weight,
+        round(min(ratio, 1.0), 4),
+        explanation,
+        {
+            "cgpa_provided": cgpa_ratio is not None,
+            "cgpa_on_10": snapshot.cgpa_on_10,
+            "min_cgpa": floor,
+            "target_cgpa": target,
+            "cgpa_ratio": round(cgpa_ratio, 3) if cgpa_ratio is not None else None,
+            "coursework_count": len(snapshot.coursework),
+            "education_records": len(snapshot.education),
+            "academic_achievements": snapshot.academic_achievements,
+            "sub_weights": {name: round(w / total_weight, 3) for name, w, _ in parts},
+        },
+    )
+
+
+# --------------------------------------------------------------------------
+# Domain knowledge
+# --------------------------------------------------------------------------
+def _distinct_keywords(role: JobRole) -> list[str]:
+    """Role keywords that the skills rubric does not already test.
+
+    "machine learning" is both a rubric skill and a domain keyword; counting
+    it in both components would score the same fact twice.
+    """
+    skill_text = " ".join(
+        [r.skill.name.lower() for r in role.required_skills]
+        + [alias.lower() for r in role.required_skills for alias in (r.skill.aliases or [])]
+    )
+    out: list[str] = []
+    for keyword in role.resume_keywords or []:
+        lowered = keyword.lower()
+        if lowered in skill_text:
+            continue
+        out.append(keyword)
+    return out
+
+
 def _score_domain_knowledge(snapshot: ProfileSnapshot, role: JobRole) -> ComponentResult:
     weight = role.weight_domain_knowledge
-    keywords = role.resume_keywords or []
+    keywords = _distinct_keywords(role)
+    total_keywords = len(role.resume_keywords or [])
 
     if not keywords:
         return ComponentResult(
             "domain_knowledge",
             weight,
-            0.5,
-            "No domain keyword list is configured for this role, so a neutral score is used.",
-            {"configured": False},
+            0.0,
+            "Every domain concept for this role is already covered by its skills "
+            "rubric, so this component is not scored separately and its weight "
+            "moves to the skills match.",
+            {"configured": False, "overlapping_with_skills": total_keywords},
+            applicable=False,
         )
 
     corpus = snapshot.searchable_text + " " + snapshot.resume_text.lower()
@@ -760,12 +995,21 @@ def _score_domain_knowledge(snapshot: ProfileSnapshot, role: JobRole) -> Compone
         "domain_knowledge",
         weight,
         round(min(ratio, 1.0), 4),
-        f"Your profile mentions {len(hits)} of {len(keywords)} domain concepts for this "
-        f"role. Missing concepts: {', '.join(misses[:6]) if misses else 'none'}.",
-        {"hits": hits, "missing": misses, "total": len(keywords)},
+        f"Your profile and resume mention {len(hits)} of {len(keywords)} domain "
+        f"concepts that this role's skills rubric does not already test"
+        + (f". Missing: {', '.join(misses[:6])}." if misses else "."),
+        {
+            "hits": hits,
+            "missing": misses,
+            "total": len(keywords),
+            "excluded_as_rubric_skills": total_keywords - len(keywords),
+        },
     )
 
 
+# --------------------------------------------------------------------------
+# Resume quality
+# --------------------------------------------------------------------------
 def _score_resume_quality(snapshot: ProfileSnapshot, role: JobRole) -> ComponentResult:
     weight = role.weight_resume_quality
 
@@ -774,14 +1018,14 @@ def _score_resume_quality(snapshot: ProfileSnapshot, role: JobRole) -> Component
             "resume_quality",
             weight,
             0.0,
-            "Resume quality cannot be assessed until a readable resume is uploaded. "
-            f"Uploading one puts {round(weight, 1)} points in play.",
+            "A resume is required for the readiness assessment and none has been "
+            f"read yet. Uploading one puts {round(weight, 1)} points in play.",
             {"has_resume": False, "points_available": round(weight, 1)},
         )
 
     ratio = max(0.0, min(snapshot.resume_quality / 100.0, 1.0))
     keywords = role.resume_keywords or []
-    hits, misses = _keyword_hits(snapshot.resume_text.lower(), keywords)
+    hits, misses = _keyword_hits(snapshot.resume_text, keywords)
 
     return ComponentResult(
         "resume_quality",
@@ -798,15 +1042,121 @@ def _score_resume_quality(snapshot: ProfileSnapshot, role: JobRole) -> Component
     )
 
 
-COMPONENT_ORDER = (
-    "skills",
-    "projects",
-    "experience",
-    "academics",
-    "domain_knowledge",
-    "certifications",
-    "resume_quality",
-)
+# --------------------------------------------------------------------------
+# Weight redistribution
+# --------------------------------------------------------------------------
+def _combine_evidence(
+    components: dict[str, ComponentResult],
+) -> tuple[dict[str, float], dict[str, Any]]:
+    """Decide the effective weight of each evidence component.
+
+    Every optional section the student does not have gives its weight to the
+    sections they do have. Beyond that, one weak optional kind may be ignored
+    if doing so produces a better pool ratio, which is what guarantees that
+    adding a modest entry can never cost points.
+
+    Returns ``(effective_weights, detail)``. The caller keeps each component's
+    own ratio; only the weights move.
+    """
+    present = [key for key in EVIDENCE_COMPONENTS if components[key].applicable]
+    absent = [key for key in EVIDENCE_COMPONENTS if not components[key].applicable]
+    pool_weight = sum(components[key].weight for key in EVIDENCE_COMPONENTS)
+
+    if not present:
+        # Nothing to show at all: the pool keeps its weight and scores zero.
+        return (
+            {key: components[key].weight for key in EVIDENCE_COMPONENTS},
+            {
+                "counted": [],
+                "dropped_as_absent": absent,
+                "ignored_as_weak": [],
+                "single_source_cap_applied": False,
+                "pool_weight": round(pool_weight, 2),
+                "note": "No projects, experience or certifications on file.",
+            },
+        )
+
+    def pool_ratio(subset: list[str]) -> float:
+        base = sum(components[key].weight for key in subset)
+        if base <= 0:
+            return 0.0
+        raw = sum(components[key].weight * components[key].ratio for key in subset) / base
+        # One kind of evidence cannot stand in fully for every other kind.
+        primary = [k for k in subset if k in ("projects", "experience")]
+        return raw * SINGLE_SOURCE_CAP if len(primary) < 2 else raw
+
+    # Candidate subsets: everything present, or everything present minus one
+    # weak optional kind. Only one removal, so the strongest kind can never
+    # simply replace the whole pool.
+    candidates: list[list[str]] = [present]
+    for key in present:
+        if len(present) > 1 and components[key].ratio < WEAK_EVIDENCE_THRESHOLD:
+            candidates.append([k for k in present if k != key])
+
+    best = max(candidates, key=pool_ratio)
+    ignored = [key for key in present if key not in best]
+
+    base = sum(components[key].weight for key in best)
+    weights = {key: 0.0 for key in EVIDENCE_COMPONENTS}
+    for key in best:
+        share = components[key].weight / base if base else 1 / len(best)
+        weights[key] = pool_weight * share
+
+    capped = len([k for k in best if k in ("projects", "experience")]) < 2
+
+    detail = {
+        "counted": best,
+        "dropped_as_absent": absent,
+        "ignored_as_weak": ignored,
+        "single_source_cap_applied": capped,
+        "pool_weight": round(pool_weight, 2),
+        "pool_ratio": round(pool_ratio(best), 4),
+    }
+    return weights, detail
+
+
+def _apply_weights(
+    components: dict[str, ComponentResult],
+) -> tuple[list[ComponentResult], dict[str, Any]]:
+    """Set each component's effective weight, redistributing optional sections."""
+    evidence_weights, evidence_detail = _combine_evidence(components)
+
+    for key in EVIDENCE_COMPONENTS:
+        component = components[key]
+        new_weight = evidence_weights[key]
+        if new_weight <= 0.001 and component.weight > 0:
+            moved_to = ", ".join(
+                COMPONENT_LABELS[k] for k in evidence_detail["counted"]
+            ) or "the rest of the rubric"
+            if key in evidence_detail["ignored_as_weak"]:
+                component.explanation += (
+                    f" This section scored below {int(WEAK_EVIDENCE_THRESHOLD * 100)}%, "
+                    f"so its {round(component.weight, 1)} point(s) were moved to "
+                    f"{moved_to} instead of pulling your score down."
+                )
+            else:
+                component.explanation += (
+                    f" Its {round(component.weight, 1)} point(s) moved to {moved_to}."
+                )
+        component.weight = round(new_weight, 2)
+
+    # The single-source cap reduces the ratio, not the available points, so a
+    # student can still see what the missing kind of evidence would be worth.
+    if evidence_detail.get("single_source_cap_applied"):
+        for key in evidence_detail["counted"]:
+            components[key].ratio = round(components[key].ratio * SINGLE_SOURCE_CAP, 4)
+            components[key].details["single_source_cap"] = SINGLE_SOURCE_CAP
+
+    # Domain knowledge folds into skills when it has nothing distinct to test.
+    domain = components["domain_knowledge"]
+    if not domain.applicable and domain.weight > 0:
+        components["skills"].weight = round(components["skills"].weight + domain.weight, 2)
+        domain.weight = 0.0
+
+    for key in EVIDENCE_COMPONENTS:
+        components[key].details["weighting"] = evidence_detail
+
+    return [components[key] for key in COMPONENT_ORDER], evidence_detail
 
 
 # --------------------------------------------------------------------------
@@ -824,7 +1174,7 @@ def score_role(snapshot: ProfileSnapshot, role: JobRole) -> RoleScoreResult:
         "domain_knowledge": _score_domain_knowledge(snapshot, role),
         "resume_quality": _score_resume_quality(snapshot, role),
     }
-    ordered = [components[key] for key in COMPONENT_ORDER]
+    ordered, evidence_detail = _apply_weights(components)
 
     total_weight = sum(c.weight for c in ordered)
     earned = sum(c.points for c in ordered)
@@ -835,9 +1185,6 @@ def score_role(snapshot: ProfileSnapshot, role: JobRole) -> RoleScoreResult:
     strengths = _build_strengths(snapshot, role, components)
     improvements = _build_improvements(snapshot, role, components, gaps)
     insights = _build_role_insights(snapshot, role, components, score)
-
-    required_total = skills_component.details.get("required_total", 0)
-    required_matched = skills_component.details.get("required_matched", 0)
 
     return RoleScoreResult(
         role_id=role.id,
@@ -851,12 +1198,14 @@ def score_role(snapshot: ProfileSnapshot, role: JobRole) -> RoleScoreResult:
         improvements=improvements,
         insights=insights,
         match_summary={
-            "required_total": required_total,
-            "required_matched": required_matched,
+            "required_total": skills_component.details.get("required_total", 0),
+            "required_matched": skills_component.details.get("required_matched", 0),
             "rubric_skills": skills_component.details.get("rubric_total", 0),
             "evidence_backed_skills": skills_component.details.get("evidence_backed", 0),
             "relevant_projects": components["projects"].details.get("relevant_count", 0),
             "internships": snapshot.internship_count,
+            "evidence_counted": evidence_detail.get("counted", []),
+            "evidence_not_applicable": evidence_detail.get("dropped_as_absent", []),
             "points_earned": round(earned, 2),
             "points_possible": round(total_weight, 2),
             "engine_version": ENGINE_VERSION,
@@ -899,17 +1248,16 @@ def _build_strengths(
             }
         )
 
-    relevant_projects = [
-        p for p in components["projects"].details.get("projects", []) if p["relevance"] >= 0.5
+    strong_projects = [
+        p for p in components["projects"].details.get("projects", []) if p["quality"] >= 0.55
     ]
-    if relevant_projects:
+    if strong_projects:
         out.append(
             {
                 "type": "projects",
                 "area": "Relevant projects",
-                "title": f"{len(relevant_projects)} project(s) map onto this role",
-                "detail": "Most relevant: "
-                + ", ".join(p["title"] for p in relevant_projects[:3]),
+                "title": f"{len(strong_projects)} project(s) map onto this role",
+                "detail": "Strongest: " + ", ".join(p["title"] for p in strong_projects[:3]),
                 "score_contribution": None,
             }
         )
@@ -993,21 +1341,34 @@ def _build_improvements(
         )
 
     projects = components["projects"]
-    if projects.ratio < 0.6:
-        expected = projects.details.get("expected", 2)
+    if not projects.applicable:
+        out.append(
+            {
+                "type": "projects",
+                "area": "Projects",
+                "title": "Adding a project would raise this score",
+                "detail": "You are currently assessed without a project portfolio. "
+                "One relevant, well-described project is the fastest way to turn "
+                "listed skills into evidence.",
+                "points_at_stake": round(
+                    components["experience"].weight * 0.3 + components["skills"].weight * 0.1, 1
+                ),
+            }
+        )
+    elif projects.ratio < 0.6:
         out.append(
             {
                 "type": "projects",
                 "area": "Projects",
                 "title": "Project portfolio is thin for this role",
                 "detail": f"{projects.details.get('relevant_count', 0)} clearly relevant "
-                f"project(s) against an expectation of {expected}. {projects.explanation}",
+                f"project(s). {projects.explanation}",
                 "points_at_stake": round(projects.weight - projects.points, 1),
             }
         )
 
     domain = components["domain_knowledge"]
-    if domain.ratio < 0.6 and domain.details.get("missing"):
+    if domain.weight > 0 and domain.ratio < 0.6 and domain.details.get("missing"):
         out.append(
             {
                 "type": "domain_knowledge",
@@ -1020,12 +1381,24 @@ def _build_improvements(
         )
 
     experience = components["experience"]
-    if experience.ratio < 0.5:
+    if not experience.applicable:
         out.append(
             {
                 "type": "experience",
                 "area": "Experience",
-                "title": "Limited internship or work exposure",
+                "title": "An internship would strengthen this profile",
+                "detail": "You are assessed on projects and skills rather than "
+                "penalised for having no internship yet, but an internship is the "
+                "evidence employers weigh most heavily.",
+                "points_at_stake": round(components["projects"].weight * 0.25, 1),
+            }
+        )
+    elif experience.ratio < 0.5:
+        out.append(
+            {
+                "type": "experience",
+                "area": "Experience",
+                "title": "Experience entries need more detail",
                 "detail": experience.explanation,
                 "points_at_stake": round(experience.weight - experience.points, 1),
             }
@@ -1054,7 +1427,7 @@ def _build_improvements(
         )
 
     certifications = components["certifications"]
-    if certifications.ratio < 0.5:
+    if certifications.weight > 0 and certifications.ratio < 0.5:
         out.append(
             {
                 "type": "certifications",
@@ -1076,11 +1449,8 @@ def _build_role_insights(
     score: float,
 ) -> list[dict[str, Any]]:
     insights: list[dict[str, Any]] = []
-    weakest = min(
-        (components[key] for key in COMPONENT_ORDER if components[key].weight > 0),
-        key=lambda c: c.ratio,
-        default=None,
-    )
+    scored = [components[key] for key in COMPONENT_ORDER if components[key].weight > 0]
+    weakest = min(scored, key=lambda c: c.ratio, default=None)
     if weakest is not None:
         headroom = round(weakest.weight - weakest.points, 1)
         insights.append(
@@ -1090,6 +1460,21 @@ def _build_role_insights(
                 "body": f"{headroom} point(s) of this role's score are still available in "
                 f"{weakest.label.lower()}. {weakest.explanation}",
                 "severity": "high" if headroom >= 10 else "medium",
+            }
+        )
+
+    not_applicable = [
+        components[key].label for key in EVIDENCE_COMPONENTS if not components[key].applicable
+    ]
+    if not_applicable:
+        insights.append(
+            {
+                "kind": "fair_assessment",
+                "title": "Scored on what you have",
+                "body": f"{', '.join(not_applicable)} are optional and you have none on "
+                "file, so their weight was redistributed rather than scored as zero. "
+                "Your score reflects the evidence you do have.",
+                "severity": "low",
             }
         )
 
@@ -1176,8 +1561,6 @@ def recalculate_assessments(
         version = 1
         previous_score: float | None = None
         if previous is not None:
-            # Identical score and inputs: refresh the timestamp instead of
-            # writing a duplicate snapshot row.
             previous.is_current = False
             previous_score = previous.overall_score
             version = previous.version + 1

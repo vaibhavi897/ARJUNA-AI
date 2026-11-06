@@ -560,27 +560,17 @@ def run(base_url: str) -> int:
         other_incomplete.json()["next_route"],
     )
 
-    print("\n17. Seeded demo account")
+    print("\n17. No synthetic accounts remain")
     demo = httpx.Client(base_url=base_url, timeout=30.0)
     demo_login = demo.post(
         "/api/auth/login",
         json={"identifier": "aarav.menon@demo.arjuna.ai", "password": "ArjunaDemo@2026"},
     )
-    if demo_login.status_code == 200:
-        demo.headers["Authorization"] = f"Bearer {demo_login.json()['access_token']}"
-        demo_dash = demo.get("/api/dashboard").json()
-        check("Demo student signs in", True)
-        check(
-            "Demo dashboard is personalised to the demo student",
-            demo_dash["welcome"]["full_name"] == "Aarav Menon",
-            demo_dash["welcome"]["full_name"],
-        )
-        check(
-            "Demo student has their own scores",
-            demo_dash["readiness"]["overall_score"] != data["readiness"]["overall_score"],
-        )
-    else:
-        check("Demo student signs in", False, "run the seeder first")
+    check(
+        "Seeded demo student can no longer sign in",
+        demo_login.status_code != 200,
+        str(demo_login.status_code),
+    )
 
     print("\n18. Password change")
     changed = client.post(

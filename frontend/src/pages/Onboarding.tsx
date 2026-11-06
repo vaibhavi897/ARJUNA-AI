@@ -1125,6 +1125,7 @@ function ProjectsStep({
       : [emptyProject()]
   );
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<number, Partial<ProjectDraft>>>({});
 
   const update = (index: number, patch: Partial<ProjectDraft>) =>
     setProjects((current) =>
@@ -1133,11 +1134,26 @@ function ProjectsStep({
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const filled = projects.filter((item) => item.title.trim().length > 1);
-    if (!filled.length) {
-      setError("Add at least one project with a title.");
+    // The section is optional. A started entry is not: a project without a
+    // description cannot be assessed, so it is rejected rather than stored.
+    const started = projects.filter(
+      (item) => item.title.trim() || item.description.trim() || item.technologies.length
+    );
+    const problems: Record<number, Partial<ProjectDraft>> = {};
+    started.forEach((item, index) => {
+      const entry: Partial<ProjectDraft> = {};
+      if (item.title.trim().length < 2) entry.title = "Give this project a title";
+      if (item.description.trim().length < 10)
+        entry.description = "Describe what it does and what you built";
+      if (Object.keys(entry).length) problems[index] = entry;
+    });
+    if (Object.keys(problems).length) {
+      setFieldErrors(problems);
+      setError("Finish or remove the incomplete project entries below.");
       return;
     }
+    const filled = started;
+    setFieldErrors({});
     setError(null);
     await onSubmit({
       projects: filled.map((item) => ({
@@ -1160,9 +1176,11 @@ function ProjectsStep({
       {error ? <ErrorState message={error} /> : null}
 
       <InlineNote tone="brand" icon={<FolderGit2 size={15} />}>
-        Describe outcomes, not just features. A quantified result ("cut query time from 6s to
-        400ms") reads far better than "worked on performance", and the technologies you list here
-        are what convert your skill claims into evidence.
+        This section is optional — if you have no projects yet, continue and you will be scored on
+        your skills and experience instead. If you do add one, describe outcomes rather than
+        features: a quantified result ("cut query time from 6s to 400ms") reads far better than
+        "worked on performance", and the technologies you list are what turn skill claims into
+        evidence.
       </InlineNote>
 
       <div className="space-y-4">
@@ -1171,7 +1189,7 @@ function ProjectsStep({
             key={index}
             index={index}
             title={project.title.trim() || "New project"}
-            removable={projects.length > 1}
+            removable
             onRemove={() =>
               setProjects((current) => current.filter((_, position) => position !== index))
             }
@@ -1179,13 +1197,16 @@ function ProjectsStep({
             <TextInput
               label="Project title"
               required
+              error={fieldErrors[index]?.title}
               value={project.title}
               onChange={(event) => update(index, { title: event.target.value })}
             />
 
             <TextArea
               label="Description"
+              required
               rows={3}
+              error={fieldErrors[index]?.description}
               value={project.description}
               placeholder="What problem it solved, how it worked, and the result."
               onChange={(event) => update(index, { description: event.target.value })}
@@ -1249,13 +1270,21 @@ function ProjectsStep({
         ))}
       </div>
 
+      {projects.length === 0 ? (
+        <EmptyState
+          icon={<FolderGit2 size={20} />}
+          title="No projects yet"
+          description="That is fine. Continue, and your readiness score will be based on your skills, academics and experience instead."
+        />
+      ) : null}
+
       <Button
         type="button"
         variant="outline"
         icon={<Plus size={15} />}
         onClick={() => setProjects((current) => [...current, emptyProject()])}
       >
-        Add another project
+        {projects.length ? "Add another project" : "Add a project"}
       </Button>
 
       <StepActions saving={saving} />
@@ -1307,20 +1336,28 @@ function ExperienceStep({
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const validExperiences = experiences.filter(
-      (item) => item.organization.trim() && item.title.trim()
+    // Experience is optional, but entries that have been started must be
+    // complete enough for the API and scoring engine to assess.
+    const startedExperiences = experiences.filter(
+      (item) => item.organization.trim() || item.title.trim() || item.description.trim()
+    );
+    const invalidExperience = startedExperiences.some(
+      (item) =>
+        !item.organization.trim() ||
+        !item.title.trim() ||
+        item.description.trim().length < 10
     );
     const validCertifications = certifications.filter((item) => item.name.trim().length > 1);
     const validAchievements = achievements.filter((item) => item.title.trim().length > 1);
 
-    if (!validExperiences.length && !validCertifications.length && !validAchievements.length) {
-      setError("Add at least one internship, certification or achievement.");
+    if (invalidExperience) {
+      setError("Finish or remove each started experience entry. Include where you worked, your role, and at least 10 characters about what you did.");
       return;
     }
     setError(null);
 
     await onSubmit({
-      experiences: validExperiences.map((item) => ({
+      experiences: startedExperiences.map((item) => ({
         id: item.id ?? undefined,
         experience_type: item.experience_type,
         organization: item.organization,
@@ -1358,6 +1395,11 @@ function ExperienceStep({
           <Briefcase size={16} className="text-brand-600" />
           <h3 className="text-sm font-bold">Internships, work & responsibilities</h3>
         </div>
+
+        <InlineNote tone="brand" icon={<Briefcase size={15} />}>
+          Experience is optional. If you have no internships or work experience yet, continue and
+          you will be scored on the rest of your profile.
+        </InlineNote>
 
         {experiences.length ? (
           experiences.map((item, index) => (
@@ -1435,6 +1477,7 @@ function ExperienceStep({
 
               <TextArea
                 label="What you did"
+                required
                 rows={2}
                 value={item.description}
                 placeholder="Outcomes, not duties. Numbers where you have them."
@@ -1778,6 +1821,10 @@ function ResumeStep({ profile, onSaved, goTo }: StepProps) {
 
   return (
     <div className="space-y-5">
+      <InlineNote tone="info" icon={<FileText size={15} />}>
+        A successfully analysed resume is required to finish onboarding and generate your scores.
+        Upload a PDF or DOCX resume to complete this step.
+      </InlineNote>
       <InlineNote tone="info" icon={<FileText size={15} />}>
         Your resume is analysed alongside what you typed, never instead of it. Review the extracted
         items below and tick only what you want imported - existing entries are left untouched and

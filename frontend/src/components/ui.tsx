@@ -187,10 +187,16 @@ export function Field({
 }) {
   return (
     <div className={cn("space-y-1.5", className)}>
+      {/* Required fields are marked with an asterisk. Optional fields carry no
+          marker at all: labelling almost every field "optional" was noise. */}
       <label htmlFor={htmlFor} className="block text-sm font-semibold text-ink-800">
         {label}
-        {required ? <span className="ml-0.5 text-danger-500">*</span> : null}
-        {!required ? <span className="ml-1.5 text-xs font-normal text-ink-400">optional</span> : null}
+        {required ? (
+          <span className="ml-0.5 text-danger-500" aria-hidden="true">
+            *
+          </span>
+        ) : null}
+        {required ? <span className="sr-only"> (required)</span> : null}
       </label>
       {children}
       {error ? (

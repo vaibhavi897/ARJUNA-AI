@@ -1,57 +1,44 @@
-"""Idempotent database seeder.
+"""Idempotent reference-data seeder.
 
-Run it as many times as you like: catalogue rows are matched by slug and demo
-students by username, so repeat runs update instead of duplicating.
+This seeds **reference data only**: the skill catalogue, career domains and
+role rubrics. It creates no students and no resumes.
 
-    python -m app.seeds.seed              # catalogue + demo students
-    python -m app.seeds.seed --catalog-only
-    python -m app.seeds.seed --reset-demo # delete demo students, then reseed
+Synthetic student profiles were removed deliberately. Generated resumes and
+invented projects were being parsed and scored alongside real ones, which made
+extraction look better than it was and made every score impossible to trust.
+Every profile in the database is now a real student's own data.
 
-Only accounts created by this script (``users.is_demo = true``) are ever
-touched. Accounts registered through the app are never modified or deleted.
+Run it as many times as you like: rows are matched by slug, so repeat runs
+update instead of duplicating.
+
+    python -m app.seeds.seed                # skills, domains, role rubrics
+    python -m app.seeds.seed --purge-demo   # also delete leftover demo accounts
+
+``--purge-demo`` only ever touches accounts flagged ``users.is_demo = true``,
+which is the flag the old seeder set. Accounts registered through the app have
+``is_demo = false`` and are never read, modified or deleted by this script.
 """
 
 from __future__ import annotations
 
 import argparse
-import datetime as dt
 import sys
 from pathlib import Path
-from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
 from app.core.logging_config import configure_logging, get_logger
-from app.core.security import hash_password
 from app.db.session import SessionLocal, engine
 from app.models import (
-    AcademicDetail,
-    Achievement,
     CareerDomain,
-    Certification,
-    Experience,
     JobRole,
-    Project,
-    ProjectTechnology,
     Resume,
     RoleRequiredSkill,
     Skill,
-    StudentCareerPreference,
-    StudentProfile,
-    StudentSettings,
-    StudentSkill,
     User,
 )
-from app.modules.activity import log_activity
-from app.modules.profile.service import compute_profile_completion
-from app.modules.profile.skills import recompute_skill_evidence, resolve_skill
-from app.modules.resume.service import parse_resume_record
-from app.modules.scoring.service import refresh_scores
 from app.seeds.catalog_data import DOMAINS, ROLES, SKILLS
-from app.seeds.resume_builder import build_docx_resume
-from app.seeds.student_data import DEMO_PASSWORD, STUDENTS
 
 logger = get_logger(__name__)
 
@@ -181,227 +168,38 @@ def seed_roles(
 
 
 # --------------------------------------------------------------------------
-# Demo students
+# Demo account cleanup
 # --------------------------------------------------------------------------
-def delete_demo_students(db: Session) -> int:
-    """Remove only accounts this seeder created."""
+def purge_demo_students(db: Session) -> int:
+    """Delete accounts the old seeder created, and only those.
+
+    ``is_demo`` is set exclusively by the removed demo seeder, so this cannot
+    reach a real account. Their uploaded files go with them; cascades handle
+    the profile, skill, project, experience and assessment rows.
+    """
     demo_users = list(db.scalars(select(User).where(User.is_demo.is_(True))))
+    if not demo_users:
+        logger.info("No demo accounts found - nothing to purge.")
+        return 0
+
     for user in demo_users:
         for resume in db.scalars(select(Resume).where(Resume.user_id == user.id)):
-            Path(resume.file_path).unlink(missing_ok=True)
+            try:
+                Path(resume.file_path).unlink(missing_ok=True)
+            except OSError as exc:  # pragma: no cover - filesystem dependent
+                logger.warning("Could not delete %s: %s", resume.file_path, exc)
+        logger.info("Deleting demo account %s (id=%s)", user.username, user.id)
         db.delete(user)
+
     db.flush()
-    logger.info("Deleted %s demo student(s)", len(demo_users))
+    logger.info("Deleted %s demo account(s). Real accounts were not touched.", len(demo_users))
     return len(demo_users)
-
-
-def _replace_children(db: Session, model: Any, user_id: int) -> None:
-    for row in db.scalars(select(model).where(model.user_id == user_id)):
-        db.delete(row)
-    db.flush()
-
-
-def seed_student(db: Session, payload: dict[str, Any], roles: dict[str, JobRole]) -> User:
-    """Create or refresh one demo student, then score them."""
-    user = db.scalar(select(User).where(User.username == payload["username"]))
-    is_new = user is None
-    if user is None:
-        user = User(
-            username=payload["username"],
-            email=payload["email"],
-            full_name=payload["full_name"],
-            password_hash=hash_password(DEMO_PASSWORD),
-            role="student",
-            is_demo=True,
-        )
-        db.add(user)
-        db.flush()
-    else:
-        user.full_name = payload["full_name"]
-        user.email = payload["email"]
-        user.is_demo = True
-
-    # --- profile ---
-    profile = db.scalar(select(StudentProfile).where(StudentProfile.user_id == user.id))
-    if profile is None:
-        profile = StudentProfile(user_id=user.id)
-        db.add(profile)
-    for key, value in payload["profile"].items():
-        setattr(profile, key, value)
-
-    if db.scalar(select(StudentSettings).where(StudentSettings.user_id == user.id)) is None:
-        db.add(StudentSettings(user_id=user.id))
-    db.flush()
-
-    # --- academics ---
-    _replace_children(db, AcademicDetail, user.id)
-    for entry in payload.get("academics", []):
-        db.add(AcademicDetail(user_id=user.id, **entry))
-
-    # --- skills ---
-    _replace_children(db, StudentSkill, user.id)
-    for name, proficiency in payload.get("skills", []):
-        skill = resolve_skill(db, name, user_id=user.id)
-        if skill is None:
-            continue
-        db.add(
-            StudentSkill(
-                user_id=user.id,
-                skill_id=skill.id,
-                proficiency=proficiency,
-                source="manual",
-            )
-        )
-    db.flush()
-
-    # --- projects ---
-    for project in db.scalars(select(Project).where(Project.user_id == user.id)):
-        db.delete(project)
-    db.flush()
-    for entry in payload.get("projects", []):
-        technologies = entry.pop("technologies", []) if "technologies" in entry else []
-        project = Project(
-            user_id=user.id,
-            title=entry["title"],
-            description=entry.get("description"),
-            contribution=entry.get("contribution"),
-            category=entry.get("category"),
-            duration_months=entry.get("duration_months"),
-            team_size=entry.get("team_size"),
-            github_url=entry.get("github_url"),
-            live_url=entry.get("live_url"),
-            source="manual",
-        )
-        db.add(project)
-        db.flush()
-        for tech in technologies:
-            skill = resolve_skill(db, tech, user_id=user.id)
-            db.add(
-                ProjectTechnology(
-                    project_id=project.id,
-                    skill_id=skill.id if skill else None,
-                    raw_name=tech,
-                )
-            )
-        entry["technologies"] = technologies  # keep the dataset reusable
-
-    # --- experience / certifications / achievements ---
-    _replace_children(db, Experience, user.id)
-    for entry in payload.get("experiences", []):
-        db.add(
-            Experience(
-                user_id=user.id,
-                experience_type=entry["experience_type"],
-                organization=entry["organization"],
-                title=entry["title"],
-                description=entry.get("description"),
-                duration_months=entry.get("duration_months"),
-                skills_used=entry.get("skills_used", []),
-                source="manual",
-            )
-        )
-
-    _replace_children(db, Certification, user.id)
-    for entry in payload.get("certifications", []):
-        issue_date = dt.date(entry["year"], 6, 1) if entry.get("year") else None
-        db.add(
-            Certification(
-                user_id=user.id,
-                name=entry["name"],
-                issuer=entry.get("issuer"),
-                issue_date=issue_date,
-                related_skills=entry.get("related_skills", []),
-                source="manual",
-            )
-        )
-
-    _replace_children(db, Achievement, user.id)
-    for entry in payload.get("achievements", []):
-        date_awarded = dt.date(entry["year"], 4, 1) if entry.get("year") else None
-        db.add(
-            Achievement(
-                user_id=user.id,
-                title=entry["title"],
-                category=entry.get("category", "other"),
-                scope=entry.get("scope"),
-                date_awarded=date_awarded,
-                source="manual",
-            )
-        )
-
-    # --- career preferences ---
-    _replace_children(db, StudentCareerPreference, user.id)
-    db.flush()
-    for index, role_slug in enumerate(payload.get("preferences", [])):
-        role = roles.get(role_slug)
-        if role is None:
-            logger.warning("Unknown role slug in demo data: %s", role_slug)
-            continue
-        db.add(
-            StudentCareerPreference(
-                user_id=user.id,
-                role_id=role.id,
-                priority=index + 1,
-                is_primary=role_slug == payload.get("primary"),
-            )
-        )
-
-    # --- resume (generated from this student's own data, then really parsed) ---
-    if payload.get("generate_resume"):
-        for resume in db.scalars(select(Resume).where(Resume.user_id == user.id)):
-            Path(resume.file_path).unlink(missing_ok=True)
-            db.delete(resume)
-        db.flush()
-
-        filename = f"{user.id}_demo_{payload['username'].replace('.', '_')}.docx"
-        destination = settings.resume_dir / filename
-        build_docx_resume(payload, destination)
-        resume = Resume(
-            user_id=user.id,
-            original_filename=f"{payload['full_name'].replace(' ', '_')}_Resume.docx",
-            stored_filename=filename,
-            file_path=str(destination),
-            content_type=(
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            ),
-            file_size_bytes=destination.stat().st_size,
-            file_extension=".docx",
-            parse_status="pending",
-            is_active=True,
-            reviewed_by_student=True,
-            uploaded_at=dt.datetime.now(dt.timezone.utc),
-        )
-        db.add(resume)
-        db.flush()
-        parse_resume_record(db, resume)
-
-    user.onboarding_completed = True
-    user.onboarding_step = 7
-    db.flush()
-
-    recompute_skill_evidence(db, user.id)
-    compute_profile_completion(db, user)
-    db.flush()
-
-    if is_new:
-        log_activity(
-            db,
-            user.id,
-            "account_created",
-            "Demo account created",
-            "Synthetic demonstration profile seeded by the Arjuna AI seeder.",
-        )
-        log_activity(db, user.id, "onboarding_completed", "Onboarding completed", None)
-
-    refresh_scores(db, user, change="onboarding_completed", log=True)
-    db.commit()
-    return user
 
 
 # --------------------------------------------------------------------------
 # Entry point
 # --------------------------------------------------------------------------
-def run(catalog_only: bool = False, reset_demo: bool = False) -> int:
+def run(purge_demo: bool = False) -> int:
     configure_logging()
 
     try:
@@ -413,45 +211,41 @@ def run(catalog_only: bool = False, reset_demo: bool = False) -> int:
         return 2
 
     with SessionLocal() as db:
+        if purge_demo:
+            purge_demo_students(db)
+            db.commit()
+
         skills = seed_skills(db)
         domains = seed_domains(db)
         roles = seed_roles(db, domains, skills)
         db.commit()
 
-        if catalog_only:
-            logger.info("Catalogue seeded (%s skills, %s roles).", len(skills), len(roles))
-            return 0
-
-        if reset_demo:
-            delete_demo_students(db)
-            db.commit()
-
-        for payload in STUDENTS:
-            user = seed_student(db, payload, roles)
-            logger.info("Seeded demo student %s (id=%s)", user.username, user.id)
-
     logger.info("-" * 70)
-    logger.info("Seed complete. %s demo students available.", len(STUDENTS))
-    logger.info("Demo password for every seeded account: %s", DEMO_PASSWORD)
-    logger.info("Primary demo login: %s / %s", STUDENTS[0]["email"], DEMO_PASSWORD)
+    logger.info(
+        "Reference data seeded: %s skills, %s domains, %s role rubrics.",
+        len(skills),
+        len(domains),
+        len(roles),
+    )
+    logger.info("No student profiles are created - every profile is a real account.")
     logger.info("-" * 70)
     return 0
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Seed the Arjuna AI database.")
-    parser.add_argument(
-        "--catalog-only",
-        action="store_true",
-        help="Seed only skills, domains and role rubrics.",
+    parser = argparse.ArgumentParser(
+        description="Seed Arjuna AI reference data (skills, domains, role rubrics)."
     )
     parser.add_argument(
-        "--reset-demo",
+        "--purge-demo",
         action="store_true",
-        help="Delete seeded demo students first (never touches real accounts).",
+        help=(
+            "Delete accounts flagged is_demo=true, left over from the removed "
+            "demo seeder. Never touches real accounts."
+        ),
     )
     args = parser.parse_args()
-    return run(catalog_only=args.catalog_only, reset_demo=args.reset_demo)
+    return run(purge_demo=args.purge_demo)
 
 
 if __name__ == "__main__":

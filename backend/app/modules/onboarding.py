@@ -72,8 +72,8 @@ STEPS: tuple[StepDefinition, ...] = (
         "projects",
         "Projects",
         "Where your skills become evidence",
-        False,
-        "Your projects demonstrate how you apply your knowledge. A skill used in a project scores far higher than one that is only listed.",
+        True,
+        "Your projects demonstrate how you apply your knowledge. Add them if you have them - if you do not yet, skip this step and you will be scored on everything else instead.",
         "Strong - projects are the highest-signal part of a student profile.",
     ),
     StepDefinition(
@@ -81,8 +81,8 @@ STEPS: tuple[StepDefinition, ...] = (
         "experience",
         "Experience & Achievements",
         "Internships, responsibilities, certifications, wins",
-        False,
-        "Internships, positions of responsibility and certifications all feed different parts of your readiness score.",
+        True,
+        "Internships, positions of responsibility and certifications all count here. No internship yet? Skip it - freshers are scored on their projects and skills, not penalised for the gap.",
         "Noted. That rounds out your practical track record.",
     ),
     StepDefinition(
@@ -90,8 +90,8 @@ STEPS: tuple[StepDefinition, ...] = (
         "resume",
         "Resume Upload",
         "PDF or DOCX - reviewed by you before anything is imported",
-        True,
-        "Let's analyse your professional profile. I will read your resume and show you what I found - you decide what gets imported.",
+        False,
+        "Your resume drives the assessment, so this step is required. I will read it and show you what I found - you decide what gets imported.",
         "Resume analysed. Nothing was changed without your confirmation.",
     ),
     StepDefinition(
@@ -129,15 +129,23 @@ def completed_steps(db: Session, user: User) -> dict[int, bool]:
     )
     step2 = _count(db, AcademicDetail, user.id) > 0
     step3 = _count(db, StudentSkill, user.id) > 0
+    # Steps 4 and 5 are optional: "complete" means visited, and having no
+    # projects or no internship is a valid answer, so they never block
+    # progress. The counts are still reported for the progress rail.
     step4 = _count(db, Project, user.id) > 0
     step5 = (
         _count(db, Experience, user.id)
         + _count(db, Certification, user.id)
         + _count(db, Achievement, user.id)
     ) > 0
+    # The resume drives the assessment, so an unreadable upload is not done.
     step6 = (
         db.scalar(
-            select(Resume.id).where(Resume.user_id == user.id, Resume.is_active.is_(True))
+            select(Resume.id).where(
+                Resume.user_id == user.id,
+                Resume.is_active.is_(True),
+                Resume.parse_status == "parsed",
+            )
         )
         is not None
     )

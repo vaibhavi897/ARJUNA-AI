@@ -122,17 +122,14 @@ def save_skills(payload: SkillsStepIn, user: CurrentUser, db: DbSession) -> Step
 
 @router.post("/projects", response_model=StepSaveResult)
 def save_projects(payload: ProjectsStepIn, user: CurrentUser, db: DbSession) -> StepSaveResult:
-    if not payload.projects:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Add at least one project - projects carry the most scoring weight.",
-        )
+    # Projects are optional: a student with none is scored on their skills and
+    # experience instead, so an empty list is a valid answer, not an error.
     created, updated, deleted = profile_service.save_projects(db, user, payload)
     return _finalise(
         db,
         user,
         4,
-        "Projects saved.",
+        "Projects saved." if payload.projects else "No projects added - that is fine.",
         change="projects",
         data={"created": created, "updated": updated, "deleted": deleted},
     )
@@ -142,15 +139,15 @@ def save_projects(payload: ProjectsStepIn, user: CurrentUser, db: DbSession) -> 
 def save_experience(
     payload: ExperienceStepIn, user: CurrentUser, db: DbSession
 ) -> StepSaveResult:
-    if not (payload.experiences or payload.certifications or payload.achievements):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Add at least one internship, certification or achievement.",
-        )
+    # Experience is optional. A fresher with no internship is assessed on
+    # projects and skills rather than penalised for the gap.
     result = profile_service.save_experience_step(db, user, payload)
-    return _finalise(
-        db, user, 5, "Experience and achievements saved.", change="experience", data=result
+    message = (
+        "Experience and achievements saved."
+        if (payload.experiences or payload.certifications or payload.achievements)
+        else "Nothing added here - freshers are not penalised for this."
     )
+    return _finalise(db, user, 5, message, change="experience", data=result)
 
 
 @router.post("/preferences", response_model=StepSaveResult)

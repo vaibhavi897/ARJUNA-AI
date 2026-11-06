@@ -54,16 +54,19 @@ logger = get_logger(__name__)
 
 T = TypeVar("T")
 
-# Section weights for the profile-completion percentage (total = 100).
+# Completion measures the sections onboarding actually requires, so these
+# weights total 100 on their own. Projects and experience are optional and are
+# reported separately as enrichment: a fresher with no internship can still
+# reach 100% complete, because nothing is missing from their profile.
 COMPLETION_WEIGHTS = {
     "personal": 20,
-    "academics": 10,
+    "academics": 15,
     "skills": 20,
-    "projects": 20,
-    "experience": 10,
-    "resume": 10,
-    "preferences": 10,
+    "resume": 30,
+    "preferences": 15,
 }
+# Shown in the breakdown, excluded from the percentage.
+ENRICHMENT_WEIGHTS = {"projects": 0, "experience": 0}
 
 
 def get_or_create_profile(db: Session, user: User) -> StudentProfile:
@@ -82,13 +85,13 @@ def compute_profile_completion(db: Session, user: User) -> tuple[int, dict[str, 
     """Recompute and persist the completion percentage and its breakdown."""
     profile = get_or_create_profile(db, user)
 
+    # CGPA is optional, so it is not part of what "complete" means.
     personal_fields = [
         profile.college,
         profile.degree,
         profile.branch,
         profile.graduation_year,
         profile.current_academic_year,
-        profile.cgpa,
     ]
     personal_ratio = sum(1 for f in personal_fields if f not in (None, "")) / len(
         personal_fields
@@ -112,12 +115,14 @@ def compute_profile_completion(db: Session, user: User) -> tuple[int, dict[str, 
         "personal": personal_ratio,
         "academics": min(academics_count / 1, 1.0),
         "skills": min(skills_count / 5, 1.0),
+        "resume": 1.0 if has_resume else 0.0,
+        "preferences": min(prefs_count / 1, 1.0),
+    }
+    enrichment = {
         "projects": min(projects_count / 2, 1.0),
         "experience": min(
             (experience_count + certs_count + achievements_count) / 2, 1.0
         ),
-        "resume": 1.0 if has_resume else 0.0,
-        "preferences": min(prefs_count / 1, 1.0),
     }
 
     breakdown: dict[str, Any] = {}
@@ -130,6 +135,15 @@ def compute_profile_completion(db: Session, user: User) -> tuple[int, dict[str, 
             "weight": weight,
             "earned": earned,
             "complete": ratios[key] >= 0.999,
+            "optional": False,
+        }
+    for key, ratio in enrichment.items():
+        breakdown[key] = {
+            "label": key.replace("_", " ").title(),
+            "weight": 0,
+            "earned": 0,
+            "complete": ratio >= 0.999,
+            "optional": True,
         }
 
     percent = int(round(min(total, 100)))

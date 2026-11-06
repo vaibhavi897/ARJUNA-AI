@@ -139,7 +139,7 @@ function PasswordInput({
 // ---------------------------------------------------------------------------
 export function Login() {
   const navigate = useNavigate();
-  const { signIn, user } = useAuth();
+  const { signIn } = useAuth();
   const { push } = useToast();
 
   const [identifier, setIdentifier] = useState("");
@@ -147,12 +147,6 @@ export function Login() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      navigate(user.onboarding_completed ? "/app/dashboard" : "/onboarding", { replace: true });
-    }
-  }, [user, navigate]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();

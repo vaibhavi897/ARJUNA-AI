@@ -72,6 +72,15 @@ def parse_month_year(raw: Any) -> tuple[dt.date | None, bool]:
     return None, False
 
 
+def _project_description(item: dict[str, Any]) -> str | None:
+    """Description plus the client or sub-title the resume printed with it."""
+    description = (item.get("description") or "").strip()
+    organization = (item.get("organization") or "").strip()
+    if organization and organization.lower() not in description.lower():
+        description = f"{organization}. {description}".strip()
+    return description or None
+
+
 def _months_between(start: dt.date | None, end: dt.date | None) -> int | None:
     if start is None or end is None:
         return None
@@ -259,6 +268,9 @@ def build_review_payload(db: Session, user: User, resume: Resume) -> dict[str, A
         {
             **project,
             "already_in_profile": (project.get("title") or "").lower() in existing_projects,
+            # Only the strongest few are pre-ticked; the rest stay available.
+            "suggested": bool(project.get("is_primary"))
+            and (project.get("title") or "").lower() not in existing_projects,
         }
         for project in (parsed.get("projects") or [])
     ]
@@ -402,8 +414,10 @@ def apply_resume_data(
         project = Project(
             user_id=user.id,
             title=str(item.get("title"))[:180],
-            description=(item.get("description") or None),
-            category="From resume",
+            description=_project_description(item),
+            # The category drives role relevance, so it is left for the
+            # student to choose rather than guessed from the resume.
+            category=None,
             github_url=(item.get("github_url") or None),
             live_url=(item.get("live_url") or None),
             start_date=start_date,
@@ -444,6 +458,7 @@ def apply_resume_data(
                 organization=str(item.get("organization"))[:180],
                 title=str(item.get("title"))[:180],
                 description=item.get("description"),
+                location=(item.get("location") or None),
                 start_date=start_date,
                 end_date=end_date,
                 is_current=ongoing,
@@ -511,7 +526,9 @@ def apply_resume_data(
             Achievement(
                 user_id=user.id,
                 title=str(item.get("title"))[:200],
+                description=(item.get("description") or None),
                 category=item.get("category") or "other",
+                scope=(item.get("scope") or None),
                 date_awarded=date_awarded,
                 source="resume",
             )

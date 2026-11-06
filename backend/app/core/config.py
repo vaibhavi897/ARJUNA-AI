@@ -84,6 +84,7 @@ class Settings(BaseSettings):
     BLS_API_KEY: str | None = None
     ADZUNA_APP_ID: str | None = None
     ADZUNA_APP_KEY: str | None = None
+    BRAVE_SEARCH_API_KEY: str | None = None
 
     # CareerVerse fit weights as JSON, e.g. {"technical":0.3,"education":0.2,"projects":0.2,"experience":0.2,"certifications":0.1}
     CAREER_FIT_WEIGHTS: str | None = None

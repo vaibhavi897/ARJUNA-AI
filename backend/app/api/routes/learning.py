@@ -498,7 +498,13 @@ def yt_summarise(import_id: int, user: CurrentUser, db: DbSession, body: Youtube
     if body and body.transcript and body.transcript.strip():
         y.transcript, y.transcript_status = youtube.parse_pasted(body.transcript), "pasted"
     if not y.transcript:
-        raise HTTPException(status_code=422, detail="Paste a transcript to summarise this video.")
+        transcript_status, segments, reason = youtube.fetch_transcript(y.video_id)
+        if not segments:
+            raise HTTPException(
+                status_code=422,
+                detail=reason or "Captions are still unavailable. Paste a transcript to summarise this video.",
+            )
+        y.transcript, y.transcript_status = segments, transcript_status
     y.summary = ai.summarise_video(y.title or "", youtube.to_prompt_text(y.transcript))
     y.model = settings.GEMINI_MODEL
     db.commit()

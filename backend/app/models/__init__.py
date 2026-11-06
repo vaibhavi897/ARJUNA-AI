@@ -80,6 +80,7 @@ from app.models.profile import (
 )
 from app.models.user import ONBOARDING_TOTAL_STEPS, StudentSettings, User
 from app.models.interview import InterviewSession
+from app.models.career_connect import CareerConnectContact, CareerConnectJob, CareerConnectTrackerItem
 
 __all__ = [
     "GeneratedMaterial",
@@ -113,6 +114,9 @@ __all__ = [
     "Base",
     "Career",
     "CareerAiOutput",
+    "CareerConnectContact",
+    "CareerConnectJob",
+    "CareerConnectTrackerItem",
     "CareerCompany",
     "CareerDomain",
     "CareerExit",

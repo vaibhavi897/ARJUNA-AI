@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import InterviewArena from "./pages/InterviewArena";
 import CareerVerse from "./pages/CareerVerse";
+import CareerConnect from "./pages/CareerConnect";
 import CareerStory from "./pages/CareerStory";
 import CareerInsights from "./pages/CareerInsights";
 import CareerCompare from "./pages/CareerCompare";
@@ -111,6 +112,7 @@ export default function App() {
             <Route path="progress" element={<LearningProgress />} />
           </Route>
           <Route path="/app/careerverse" element={<Protected><CareerVerse /></Protected>} />
+          <Route path="/app/career-connect" element={<Protected><CareerConnect /></Protected>} />
           <Route path="/app/careerverse/compare" element={<Protected><CareerCompare /></Protected>} />
           <Route path="/app/careerverse/:slug/story" element={<Protected><CareerStory /></Protected>} />
           <Route path="/app/careerverse/:slug/insights" element={<Protected><CareerInsights /></Protected>} />

@@ -8,6 +8,7 @@ import {
   Mic2,
   LogOut,
   Compass,
+  BriefcaseBusiness,
   GraduationCap,
   Menu,
   Settings as SettingsIcon,
@@ -72,6 +73,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/app/interview-arena", label: "Interview Arena", icon: <Mic2 size={18} />, ready: true },
   { to: "/app/learning", label: "AI Learning Hub", icon: <GraduationCap size={18} />, ready: true },
   { to: "/app/careerverse", label: "CareerVerse", icon: <Compass size={18} />, ready: true },
+  { to: "/app/career-connect", label: "Career Connect", icon: <BriefcaseBusiness size={18} />, ready: true },
   { to: "/app/settings", label: "Settings", icon: <SettingsIcon size={18} />, ready: true },
 ];
 

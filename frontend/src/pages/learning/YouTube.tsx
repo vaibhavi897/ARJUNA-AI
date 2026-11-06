@@ -186,6 +186,7 @@ export default function YouTube() {
           {!s ? (
             <div className="space-y-3">
               <InlineNote tone="warn"><b>{reason ?? "No transcript yet."}</b> Not every video has accessible captions. Paste the transcript yourself (copy it from the YouTube “Show transcript” panel) and we will summarise that instead.</InlineNote>
+              <Button variant="outline" loading={busy} onClick={() => run(() => lh.resummarise(cur.id))} icon={<RefreshCw size={15} />}>Fetch captions again</Button>
               <textarea value={paste} onChange={(e) => setPaste(e.target.value)} rows={8} placeholder={"Paste the transcript here. Lines may start with timestamps like 00:45 or [01:02:03]."} className="input-base font-mono text-[13px]" aria-label="Transcript" />
               <Button loading={busy} disabled={paste.trim().length < 80} onClick={() => go(paste)} icon={<ClipboardPaste size={15} />}>Summarise pasted transcript</Button>
             </div>

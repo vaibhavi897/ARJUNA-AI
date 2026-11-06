@@ -56,8 +56,15 @@ def put_cached(db: Session, key: str, kind: str, payload: dict[str, Any]) -> Non
 
 def _client():  # noqa: ANN202
     from google import genai  # imported lazily so the app boots without the SDK
+    from google.genai import types
 
-    return genai.Client(api_key=settings.GEMINI_API_KEY)
+    # Structured JSON responses used throughout the Learning Hub are served
+    # by v1beta. Pin the API version so newer SDK defaults do not route these
+    # requests to v1, where JSON mode is rejected.
+    return genai.Client(
+        api_key=settings.GEMINI_API_KEY,
+        http_options=types.HttpOptions(api_version="v1beta"),
+    )
 
 
 def _shape(schema: Any, data: Any) -> Any:
@@ -93,7 +100,13 @@ def generate_json(
     validated and returned as a plain dict; invalid output triggers a retry."""
     if not settings.gemini_enabled:
         raise GeminiUnavailable("GEMINI_API_KEY is not configured.")
-    from google.genai import errors, types
+    try:
+        from google.genai import errors, types
+    except ImportError as exc:
+        logger.exception("Google Gen AI SDK is missing from the backend environment")
+        raise GeminiUnavailable(
+            "Gemini support is not installed on the server. Install backend/requirements.txt and restart the backend."
+        ) from exc
 
     client = _client()
     cfg: dict[str, Any] = {"response_mime_type": "application/json", "temperature": temperature}

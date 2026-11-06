@@ -1,6 +1,7 @@
 /** Routing and route guards. */
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AuthProvider, ToastProvider, useAuth } from "./lib/auth";
+import { CinematicProvider } from "./components/Cinematic";
 import { PageLoader, Toaster } from "./components/ui";
 import Landing from "./pages/Landing";
 import { Login, Register } from "./pages/Auth";
@@ -8,6 +9,10 @@ import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import InterviewArena from "./pages/InterviewArena";
+import CareerVerse from "./pages/CareerVerse";
+import CareerStory from "./pages/CareerStory";
+import CareerInsights from "./pages/CareerInsights";
+import CareerCompare from "./pages/CareerCompare";
 import {
   AIAssessment,
   CareerPaths,
@@ -59,10 +64,11 @@ export default function App() {
   return (
     <ToastProvider>
       <AuthProvider>
+        <CinematicProvider>
         <Routes>
           {/* Login is the app's startup screen. Keep the public landing page at
               /welcome for visitors who want product information first. */}
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Landing />} />
           <Route path="/welcome" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -87,6 +93,10 @@ export default function App() {
               </Protected>
             }
           />
+          <Route path="/app/careerverse" element={<Protected><CareerVerse /></Protected>} />
+          <Route path="/app/careerverse/compare" element={<Protected><CareerCompare /></Protected>} />
+          <Route path="/app/careerverse/:slug/story" element={<Protected><CareerStory /></Protected>} />
+          <Route path="/app/careerverse/:slug/insights" element={<Protected><CareerInsights /></Protected>} />
           <Route
             path="/app/interview-arena"
             element={
@@ -147,6 +157,7 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />
+        </CinematicProvider>
       </AuthProvider>
     </ToastProvider>
   );

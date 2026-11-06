@@ -14,7 +14,8 @@ import {
   ShieldCheck,
   User,
 } from "lucide-react";
-import { Logo } from "../components/layout";
+import { useCinematic } from "../components/Cinematic";
+import { QuoteRotator, SuitsScene, Wordmark, Words } from "../components/suits";
 import { Badge, Button, Field, TextInput } from "../components/ui";
 import { ApiError, api } from "../lib/api";
 import { useAuth, useToast } from "../lib/auth";
@@ -38,53 +39,42 @@ function AuthLayout({
   children: React.ReactNode;
   footer: React.ReactNode;
 }) {
+  const { go } = useCinematic();
   return (
-    <div className="grid min-h-screen lg:grid-cols-[1fr_minmax(0,560px)]">
-      {/* Brand panel */}
-      <div className="relative hidden overflow-hidden mesh-forest lg:block">
-        <div className="absolute inset-0 grid-lines opacity-[0.07]" aria-hidden />
+    <div className="su-dark grid min-h-screen bg-[#05070B] text-white lg:grid-cols-[1.1fr_minmax(0,560px)]">
+      {/* Cinematic panel */}
+      <div className="relative isolate hidden overflow-hidden lg:block">
+        <SuitsScene dim />
         <div className="relative flex h-full flex-col justify-between p-12">
-          <Link to="/" aria-label="Arjuna AI home">
-            <Logo variant="light" size="lg" />
-          </Link>
-
-          <div className="max-w-md">
-            <h2 className="text-balance font-display text-3xl font-extrabold leading-tight text-white">
-              Placement readiness, measured role by role.
+          <button onClick={() => go("/")} aria-label="Arjuna AI home" className="self-start"><Wordmark /></button>
+          <div className="max-w-xl">
+            <span className="su-rule mb-7 block h-px bg-[#E6C878]" />
+            <h2 className="font-suits text-5xl font-bold leading-[1.05]">
+              <Words text="Ambition is a promise." delay={500} step={120} />
+              <br />
+              <Words wordClass="su-gold-text" text="Discipline signs it." delay={1200} step={140} />
             </h2>
-            <ul className="mt-7 space-y-3.5">
-              {SIDE_POINTS.map((point) => (
-                <li key={point} className="flex items-start gap-3">
-                  <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-brand-400" />
-                  <span className="text-sm leading-relaxed text-white/75">{point}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="su-fade mt-10 border-l-2 border-[#E6C878]/70 pl-6" style={{ animationDelay: "1800ms" }}>
+              <QuoteRotator className="min-h-[88px] text-xl leading-8 text-white/80" start={3} interval={5600} />
+            </div>
           </div>
-
-          <div className="flex items-center gap-2 text-xs text-white/45">
-            <ShieldCheck size={14} />
-            Passwords hashed with Argon2. Your records are scoped to your account.
+          <div className="flex items-center gap-2 text-xs text-white/40">
+            <ShieldCheck size={14} /> Passwords hashed with Argon2. Your records are scoped to your account.
           </div>
         </div>
       </div>
 
       {/* Form panel */}
-      <div className="flex items-center justify-center bg-white px-4 py-10 sm:px-8">
-        <div className="w-full max-w-md animate-fade-up">
-          <div className="lg:hidden">
-            <Link to="/" aria-label="Arjuna AI home">
-              <Logo />
-            </Link>
-          </div>
-          <div className="mt-8 lg:mt-0">
-            <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
-              {title}
-            </h1>
-            <p className="mt-1.5 text-sm text-ink-500">{subtitle}</p>
+      <div className="relative flex items-center justify-center bg-[#0A0D13] px-5 py-10 sm:px-10">
+        <div className="pointer-events-none absolute inset-0 opacity-60" style={{ background: "radial-gradient(60% 50% at 80% 0%, rgba(230,200,120,.10), transparent 70%)" }} />
+        <div className="su-form su-glass relative w-full max-w-md rounded-sm p-7 sm:p-9" style={{ animation: "su-rise .9s cubic-bezier(.2,.8,.2,1) .35s both" }}>
+          <div className="lg:hidden"><button onClick={() => go("/")} aria-label="Arjuna AI home"><Wordmark /></button></div>
+          <div className="mt-6 lg:mt-0">
+            <h1 className="font-suits text-3xl font-bold tracking-tight sm:text-4xl"><Words text={title} delay={500} step={110} /></h1>
+            <p className="su-fade mt-2 text-sm text-white/55" style={{ animationDelay: "1000ms" }}>{subtitle}</p>
           </div>
           <div className="mt-7">{children}</div>
-          <div className="mt-6 text-center text-sm text-ink-500">{footer}</div>
+          <div className="mt-6 text-center text-sm text-white/55">{footer}</div>
         </div>
       </div>
     </div>

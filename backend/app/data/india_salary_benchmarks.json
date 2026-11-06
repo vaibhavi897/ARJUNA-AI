@@ -1,0 +1,5 @@
+{
+  "_readme": "Curated Indian salary benchmarks. Add an entry ONLY from a credible published report or compensation survey and fill every source field. Entries without source_name/source_url/last_verified are rejected by the seeder. Never estimate. Amounts are per year in the stated currency.",
+  "_example": {"career_slug": "software-engineer", "location": "Bengaluru", "currency": "INR", "salary_type": "base", "level": "entry", "experience_min_years": 0, "experience_max_years": 2, "amount": null, "range_low": null, "range_high": null, "source_name": "<report name>", "source_url": "<url>", "reference_year": 2025, "last_verified": "YYYY-MM-DD"},
+  "entries": []
+}

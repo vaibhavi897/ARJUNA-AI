@@ -689,6 +689,7 @@ export type InterviewSession = {
   focus: Record<string, number>;
   transcript: InterviewMessage[];
   integrity_signals: IntegritySignal[];
+  consent_media?: boolean;
 };
 export type InterviewAnswerResult = {
   session: InterviewSession;

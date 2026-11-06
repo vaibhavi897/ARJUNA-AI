@@ -55,6 +55,21 @@ class Settings(BaseSettings):
     GEMINI_MODEL: str = "gemini-2.5-flash"
     LLM_MODEL: str = "claude-opus-5"
 
+    # --- CareerVerse: Gemini (keys stay server-side) ---
+    GEMINI_API_KEY: str | None = None
+    GEMINI_MODEL: str = "gemini-3.8-flash"
+
+    # --- CareerVerse: optional external data. Each one is independent; the
+    # module works from the seeded dataset when any of them is unset.
+    ONET_USERNAME: str | None = None
+    ONET_PASSWORD: str | None = None
+    BLS_API_KEY: str | None = None
+    ADZUNA_APP_ID: str | None = None
+    ADZUNA_APP_KEY: str | None = None
+
+    # CareerVerse fit weights as JSON, e.g. {"technical":0.3,"education":0.2,"projects":0.2,"experience":0.2,"certifications":0.1}
+    CAREER_FIT_WEIGHTS: str | None = None
+
     # --- Logging ---
     LOG_LEVEL: str = "INFO"
 
@@ -83,6 +98,10 @@ class Settings(BaseSettings):
     @property
     def max_upload_bytes(self) -> int:
         return self.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+
+    @property
+    def gemini_enabled(self) -> bool:
+        return bool(self.GEMINI_API_KEY)
 
     @property
     def llm_enabled(self) -> bool:

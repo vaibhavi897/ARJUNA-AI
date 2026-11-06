@@ -3,7 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AlertTriangle, CalendarClock, CalendarPlus, Loader2, RefreshCw, Settings2, Sparkles, Target, Wand2 } from "lucide-react";
 import { Badge, Button, Card, EmptyState, ErrorState, InlineNote, Modal, ProgressBar } from "../../components/ui";
-import { Calendar, CalendarHeader, Legend, type CalView } from "../../components/learning/Calendar";
+import { CalendarHeader, Legend, type CalView } from "../../components/learning/Calendar";
+import PlanCalendar from "../../components/learning/PlanCalendar";
 import { DayPanel } from "../../components/learning/DayPanel";
 import { CAT, Skeleton, addDays, fmtShort, iso, parse, todayIso, useLoad } from "../../components/learning/shared";
 import { lh, type Day, type Plan, type Task } from "../../lib/learning";
@@ -253,7 +254,7 @@ function PlanView({ plan, onPlan, onNew, toast, deepLink }: { deepLink: { date: 
         {error ? <ErrorState message={error} onRetry={load} /> : null}
         {loading && days.size === 0 ? <Skeleton className="h-96" /> : null}
         {!loading && !error && filter !== "all" && ![...days.values()].some((d) => d.tasks.length) ? <EmptyState title="Nothing matches this filter" description={filter === "missed" ? "No missed tasks. Nice work." : "Try another filter."} /> : null}
-        {view !== "day" ? <Calendar view={view} cursor={cursor} days={days} planStart={plan.start_date} planEnd={plan.end_date} selected={selected} onSelect={(d) => setSelected(d)} /> : null}
+        {view !== "day" ? <PlanCalendar view={view} cursor={cursor} days={days} planStart={plan.start_date} planEnd={plan.end_date} selected={selected} onSelect={(d) => setSelected(d)} onMove={async (id, to) => { try { await lh.patchTask(id, { date: to }); toast({ title: "Task moved", description: fmtShort(to), variant: "success" }); load(); } catch (e) { toast({ title: "Could not move task", description: (e as Error).message, variant: "error" }); } }} /> : null}
       </Card>
 
       {selected && selected >= plan.start_date && selected <= plan.end_date ? (

@@ -2,6 +2,7 @@
  * Student dashboard. Every value shown here comes from the /api/dashboard
  * response, which is computed from the signed-in student's own rows.
  */
+import SkillMap from "../components/SkillMap";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -615,6 +616,7 @@ export default function Dashboard() {
                   description="Biggest point losses first."
                   icon={<Target size={17} />}
                 />
+                <SkillMap gaps={skills.role_gaps} />
                 <div className="mt-3 space-y-2">
                   {skills.role_gaps.slice(0, 6).map((gap) => (
                     <div key={gap.skill_name} className="rounded-xl border border-line bg-white p-3">

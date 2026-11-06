@@ -1,6 +1,6 @@
 /** Dynamic Resume Builder: pick a job, get a one-page tailored resume, edit it, export PDF or Word. */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, Download, FileText, Plus, RefreshCcw, Repeat, Sparkles, Trash2, Wand2 } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, Download, GripVertical, FileText, Plus, RefreshCcw, Repeat, Sparkles, Trash2, Wand2 } from "lucide-react";
 import { Badge, Button, Card, EmptyState, ErrorState, LoadingBlock, Modal, TextArea, TextInput } from "../components/ui";
 import { AppShell } from "../components/layout";
 import { useToast } from "../lib/auth";
@@ -121,6 +121,16 @@ function BulletEditor({ value, onChange }: { value: string[]; onChange: (v: stri
 
 function SectionEditor({ sec, onChange, onSwap }: { sec: Section; onChange: (s: Section) => void; onSwap: (ref: string | null, kind: string) => void }) {
   const swappable = ["experience", "projects", "leadership"].includes(sec.key);
+  const [drag, setDrag] = useState<number | null>(null);
+  const [hover, setHover] = useState<number | null>(null);
+  const drop = (to: number) => {
+    if (drag === null || drag === to) { setDrag(null); setHover(null); return; }
+    const arr = (sec.entries ?? []).slice();
+    const [m] = arr.splice(drag, 1);
+    arr.splice(to, 0, m);
+    onChange({ ...sec, entries: arr });
+    setDrag(null); setHover(null);
+  };
   return (
     <Card className="p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
@@ -132,7 +142,9 @@ function SectionEditor({ sec, onChange, onSwap }: { sec: Section; onChange: (s: 
           {(sec.entries ?? []).map((e, i) => {
             const set = (patch: Partial<Entry>) => onChange({ ...sec, entries: (sec.entries ?? []).map((x, k) => (k === i ? { ...x, ...patch } : x)) });
             return (
-              <div key={i} className="rounded-xl border border-line bg-sage-50/40 p-3">
+              <div key={i} onDragOver={(ev) => { if (drag !== null) { ev.preventDefault(); setHover(i); } }} onDrop={() => drop(i)}
+                className={cn("rounded-xl border bg-sage-50/40 p-3 transition-all", hover === i && drag !== null && drag !== i ? "border-brand-500 ring-2 ring-brand-200" : "border-line", drag === i && "opacity-50")}>
+                {(sec.entries ?? []).length > 1 && <div draggable onDragStart={(ev) => { setDrag(i); ev.dataTransfer.effectAllowed = "move"; ev.dataTransfer.setData("text/plain", String(i)); }} onDragEnd={() => { setDrag(null); setHover(null); }} title="Drag to reorder" aria-label="Drag to reorder" className="mb-2 flex cursor-grab items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-ink-400 active:cursor-grabbing"><GripVertical size={14} />Drag to reorder</div>}
                 <div className="grid gap-2 md:grid-cols-[1fr_180px]">
                   <TextInput aria-label="Entry title" placeholder="**Organisation** - Role" value={e.title} onChange={(ev) => set({ title: ev.target.value })} />
                   <TextInput aria-label="Dates" placeholder="Jan 2025 – Present" value={e.right} onChange={(ev) => set({ right: ev.target.value })} />

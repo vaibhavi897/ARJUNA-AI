@@ -1,4 +1,5 @@
 /** Interactive plan calendar: month and week grids, colour-coded by task category. */
+import { useState } from "react";
 import { ChevronLeft, ChevronRight, Flag, Moon } from "lucide-react";
 import type { Day } from "../../lib/learning";
 import { cn } from "../../lib/utils";
@@ -30,7 +31,8 @@ export function CalendarHeader({ view, onView, cursor, onCursor }: { view: CalVi
   );
 }
 
-function DayCell({ date, day, inPlan, selected, onSelect, compact }: { date: Date; day?: Day; inPlan: boolean; selected: boolean; onSelect: (d: string) => void; compact?: boolean }) {
+function DayCell({ date, day, inPlan, selected, onSelect, compact, onMove }: { date: Date; day?: Day; inPlan: boolean; selected: boolean; onSelect: (d: string) => void; compact?: boolean; onMove?: (taskId: number, to: string) => void }) {
+  const [over, setOver] = useState(false);
   const key = iso(date);
   const today = key === todayIso();
   const tasks = (day?.tasks ?? []).filter((t) => t.category !== "rest");
@@ -38,10 +40,14 @@ function DayCell({ date, day, inPlan, selected, onSelect, compact }: { date: Dat
   const pct = day && day.total ? Math.round((100 * day.done) / day.total) : 0;
   const max = compact ? 6 : 3;
   return (
-    <button onClick={() => onSelect(key)} aria-label={`${date.toDateString()}${tasks.length ? `, ${tasks.length} tasks` : day?.rest ? ", rest day" : ""}`} aria-pressed={selected}
+    <button onClick={() => onSelect(key)}
+      onDragOver={(e) => { if (onMove && inPlan && !day?.rest) { e.preventDefault(); setOver(true); } }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => { setOver(false); const id = Number(e.dataTransfer.getData("text/task-id")); if (onMove && id && inPlan) onMove(id, key); }}
+      aria-label={`${date.toDateString()}${tasks.length ? `, ${tasks.length} tasks` : day?.rest ? ", rest day" : ""}`} aria-pressed={selected}
       className={cn("group relative flex min-h-[112px] flex-col rounded-xl border p-1.5 text-left transition-all", compact && "min-h-[300px] p-2",
         !inPlan ? "border-transparent bg-transparent opacity-40" : day?.rest ? "border-slate-200 bg-slate-50/80" : "border-line bg-white hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md",
-        selected && "ring-2 ring-brand-500 ring-offset-1", today && "border-brand-500")}>
+        selected && "ring-2 ring-brand-500 ring-offset-1", over && "bg-brand-50 ring-2 ring-brand-400", today && "border-brand-500")}>
       <div className="flex items-center justify-between">
         <span className={cn("grid h-6 min-w-6 place-items-center rounded-full px-1 text-xs font-extrabold", today ? "bg-brand-600 text-white" : "text-ink-600")}>{date.getDate()}</span>
         <span className="flex items-center gap-1">
@@ -52,7 +58,10 @@ function DayCell({ date, day, inPlan, selected, onSelect, compact }: { date: Dat
       </div>
       <div className="mt-1 flex-1 space-y-1 overflow-hidden">
         {tasks.slice(0, max).map((t) => (
-          <div key={t.id} title={t.title} className={cn("flex items-center gap-1 truncate rounded-md border px-1.5 py-0.5 text-[11px] font-semibold leading-tight", CAT[t.category].soft, CAT[t.category].text, t.status === "completed" && "opacity-60 line-through", t.status === "skipped" && "opacity-40")}>
+          <div key={t.id} title={onMove && t.status === "pending" && !t.locked ? `${t.title} (drag to another day)` : t.title}
+            draggable={!!onMove && t.status === "pending" && !t.locked}
+            onDragStart={(e) => { e.dataTransfer.setData("text/task-id", String(t.id)); e.dataTransfer.effectAllowed = "move"; }}
+            className={cn("flex items-center gap-1 truncate rounded-md border px-1.5 py-0.5 text-[11px] font-semibold leading-tight", CAT[t.category].soft, CAT[t.category].text, t.status === "completed" && "opacity-60 line-through", t.status === "skipped" && "opacity-40")}>
             <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", CAT[t.category].dot)} />
             <span className="truncate">{compact ? `${t.title} · ${hm(t.est_minutes)}` : t.title}</span>
           </div>
@@ -65,7 +74,7 @@ function DayCell({ date, day, inPlan, selected, onSelect, compact }: { date: Dat
   );
 }
 
-export function Calendar({ view, cursor, days, planStart, planEnd, selected, onSelect }: { view: Exclude<CalView, "day">; cursor: Date; days: Map<string, Day>; planStart: string; planEnd: string; selected: string | null; onSelect: (d: string) => void }) {
+export function Calendar({ view, cursor, days, planStart, planEnd, selected, onSelect, onMove }: { onMove?: (taskId: number, to: string) => void; view: Exclude<CalView, "day">; cursor: Date; days: Map<string, Day>; planStart: string; planEnd: string; selected: string | null; onSelect: (d: string) => void }) {
   const cells: Date[] = [];
   if (view === "month") {
     const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
@@ -84,7 +93,7 @@ export function Calendar({ view, cursor, days, planStart, planEnd, selected, onS
       </div>
       <div key={`${view}-${iso(cursor)}`} className="cv-rise grid grid-cols-7 gap-1.5">
         {cells.map((d) => (
-          <DayCell key={iso(d)} date={d} day={days.get(iso(d))} inPlan={d >= ps && d <= pe && (view === "week" || d.getMonth() === cursor.getMonth() || true)} selected={selected === iso(d)} onSelect={onSelect} compact={view === "week"} />
+          <DayCell key={iso(d)} date={d} day={days.get(iso(d))} inPlan={d >= ps && d <= pe && (view === "week" || d.getMonth() === cursor.getMonth() || true)} selected={selected === iso(d)} onSelect={onSelect} compact={view === "week"} onMove={onMove} />
         ))}
       </div>
     </div>

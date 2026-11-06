@@ -1,4 +1,5 @@
 /** Quizzes & Assessments: generate, take, review. Scoring happens on the server. */
+import CodeEditor from "../../components/CodeEditor";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -75,7 +76,7 @@ function QuestionView({ q, ans, set }: { q: Question; ans: Record<string, unknow
     const value = String(ans?.code ?? q.starter_code ?? "");
     return (
       <div className="space-y-2">
-        <textarea value={value} onChange={(e) => set({ code: e.target.value })} onKeyDown={(e) => { if (e.key === "Tab") { e.preventDefault(); const t = e.currentTarget, s = t.selectionStart; set({ code: value.slice(0, s) + "    " + value.slice(t.selectionEnd) }); requestAnimationFrame(() => (t.selectionStart = t.selectionEnd = s + 4)); } }} rows={12} spellCheck={false} className="w-full rounded-xl bg-[#0F1B2D] p-4 font-mono text-[13px] leading-6 text-emerald-100 outline-none focus:ring-2 focus:ring-brand-400" aria-label="Your code" />
+        <CodeEditor value={value} onChange={(code) => set({ code })} />
         <p className="text-xs text-ink-500">Write a Python function named <code className="rounded bg-sage-100 px-1">{q.entry_function}</code>. Only the standard library is available; files, network and system access are blocked.</p>
         {q.examples.length ? <div className="rounded-xl bg-sage-50 p-3 text-xs"><b>Examples:</b>{q.examples.map((e, i) => <p key={i} className="font-mono">{q.entry_function}({e.args.map((a) => JSON.stringify(a)).join(", ")}) → {JSON.stringify(e.expected)}</p>)}</div> : null}
       </div>

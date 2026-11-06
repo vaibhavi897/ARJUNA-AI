@@ -1,4 +1,5 @@
 /** The open notebook: index, numbered pages, chapters, bookmarks, tags, history, autosave, focus mode. */
+import RichEditor from "../RichEditor";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Eye, FileUp, History, Keyboard, Loader2, Lock, Maximize2, Minimize2, Menu, Plus, Search, Settings2, Trash2, X } from "lucide-react";
 import { Button, EmptyState, ErrorState, Modal } from "../ui";
@@ -172,7 +173,7 @@ export function Diary({ id, token, onBack, onLocked, onSettings }: { id: number;
                 </div>
               ) : null}
               {preview ? <div className="min-h-[440px] flex-1 px-6 pb-6 pl-14 pt-2"><Markdown text={draft.content || "*Nothing written yet.*"} className={focus ? "!text-white/90" : "!text-[#2B2118]"} /></div> : (
-                <textarea value={draft.content} onChange={(e) => edit({ content: e.target.value })} aria-label="Page content" placeholder="Start writing… Markdown works: # heading, - list, **bold**, ```code```" spellCheck className="min-h-[440px] flex-1 resize-none bg-transparent px-6 pb-6 pl-14 pt-2 font-[inherit] text-[16px] leading-8 outline-none placeholder:opacity-40" autoFocus={focus} />)}
+                <RichEditor key={`${page?.page_no}-${flipKey}`} value={draft.content} onChange={(content) => edit({ content })} autoFocus={focus} dark={focus} className="min-h-[440px] flex-1 px-6 pb-6 pl-14 pt-2" />)}
               <footer className="flex items-center justify-between gap-2 border-t border-black/10 px-4 py-2.5 pl-14">
                 <button onClick={() => open(no - 1)} disabled={no <= 1} aria-label="Previous page" className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-bold transition hover:bg-black/10 disabled:opacity-30"><ChevronLeft size={16} />Prev</button>
                 <label className="flex items-center gap-1.5 text-xs font-bold opacity-80">Go to page<input type="number" min={1} max={total} defaultValue={no} key={no} onKeyDown={(e) => { if (e.key === "Enter") { const n = Math.min(total, Math.max(1, Number(e.currentTarget.value))); open(n); } }} aria-label="Jump to page number" className="h-8 w-14 rounded-lg border border-black/15 bg-white/70 px-2 text-center font-mono text-sm text-[#2B2118]" /></label>

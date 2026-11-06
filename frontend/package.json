@@ -10,11 +10,28 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fullcalendar/core": "^6.1.22",
+    "@fullcalendar/daygrid": "^6.1.22",
+    "@fullcalendar/interaction": "^6.1.22",
+    "@fullcalendar/react": "^6.1.22",
+    "@fullcalendar/timegrid": "^6.1.22",
+    "@monaco-editor/react": "^4.7.0",
+    "@tiptap/extension-placeholder": "^2.27.3",
+    "@tiptap/pm": "^2.27.3",
+    "@tiptap/react": "^2.27.3",
+    "@tiptap/starter-kit": "^2.27.3",
+    "@xyflow/react": "^12.12.1",
+    "echarts": "^6.1.0",
+    "echarts-for-react": "^3.0.6",
+    "gsap": "^3.15.1",
     "lucide-react": "0.468.0",
+    "motion": "^14.10.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-router-dom": "^7.18.5",
-    "recharts": "2.13.3"
+    "recharts": "2.13.3",
+    "tiptap-markdown": "^0.8.10",
+    "wavesurfer.js": "^8.0.5"
   },
   "devDependencies": {
     "@types/react": "18.3.12",

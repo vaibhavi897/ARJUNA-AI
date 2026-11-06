@@ -1,4 +1,5 @@
 /** App shell, sidebar, top bar and public navigation. */
+import { motion } from "motion/react";
 import Assistant from "./Assistant";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
@@ -285,7 +286,7 @@ export function AppShell({
         </header>
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          <div className="mx-auto max-w-[1400px]">{children}</div>
+          <motion.div key={location.pathname} className="mx-auto max-w-[1400px]" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>{children}</motion.div>
         </main>
         <Assistant />
       </div>

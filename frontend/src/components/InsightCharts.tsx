@@ -1,5 +1,5 @@
 /** Interactive charts for Career Insights (Recharts). */
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, RadialBar, RadialBarChart, ResponsiveContainer, Sector, Tooltip, XAxis, YAxis } from "recharts";
 import { Info } from "lucide-react";
 import { Badge } from "./ui";
@@ -7,6 +7,7 @@ import { CountUp } from "./fx";
 import { cn } from "../lib/utils";
 
 const PALETTE = ["#229A63", "#3F63A8", "#F2B35E", "#A04A86", "#2E8C86", "#E25555", "#6247AA", "#8D5A3B"];
+const SalaryRange = lazy(() => import("./SalaryRange"));
 const lpa = (n: number) => `₹${(n / 100000).toFixed(n >= 1e7 ? 0 : 1)} LPA`;
 
 type Row = { level: string; salary_type: string; amount: number | null; range_low: number | null; range_high: number | null; location: string | null; experience_min_years: number | null; experience_max_years: number | null; currency: string; is_estimate?: boolean; source_name: string };
@@ -119,6 +120,13 @@ export function SalaryExplorer({ salary }: { salary: SalaryData }) {
           {pickedCity ? <p className="mt-2 rounded-xl bg-sage-50 px-3 py-2 text-sm"><b>{pickedCity.name}</b>: {lpa(pickedCity.v)} typical, range {lpa(pickedCity.lo)} to {lpa(pickedCity.hi)}</p> : null}
         </Box>
       </div>
+      {curve.some((c) => c.high > 0) ? (
+        <Box title="Pay range by level" hint="Bars show the typical range; lines show base and total compensation.">
+          <Suspense fallback={<div className="h-[300px] animate-pulse rounded-xl bg-sage-100" />}>
+            <SalaryRange data={curve.filter((c) => c.high > 0).map((c) => ({ name: c.name, low: c.low || c.base, high: c.high, base: c.base, total: c.total || undefined }))} fmt={lpa} />
+          </Suspense>
+        </Box>
+      ) : null}
       {estimate ? <p className="text-xs text-ink-500">Estimates are editorial planning ranges for fresh-to-senior base pay in India. For real offers, check current salary surveys and company bands. Replace any row with a sourced benchmark in <code>india_salary_benchmarks.json</code>.</p> : null}
     </div>
   );

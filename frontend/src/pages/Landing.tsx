@@ -1,5 +1,7 @@
 /** ARJUNA AI opening screen: a high-end Manhattan law-firm atmosphere for ambitious people. */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Navigate } from "react-router-dom";
 import { ArrowRight, ChevronDown, Crosshair, Gauge, Layers } from "lucide-react";
 import { useAuth } from "../lib/auth";
@@ -17,6 +19,17 @@ export default function Landing() {
   const { user, loading } = useAuth();
   const { go } = useCinematic();
   const [scrolled, setScrolled] = useState(false);
+  const page = useRef<HTMLDivElement>(null);
+
+  // cinematic scroll: the guide drifts upward as you scroll (transform only, never hides content)
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    gsap.registerPlugin(ScrollTrigger);
+    const ctx = gsap.context(() => {
+      gsap.to("[data-parallax]", { yPercent: -12, ease: "none", scrollTrigger: { trigger: "[data-parallax]", start: "top 30%", end: "bottom top", scrub: true } });
+    }, page);
+    return () => ctx.revert();
+  }, []);
 
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 40);
@@ -27,7 +40,7 @@ export default function Landing() {
   if (!loading && user) return <Navigate to={user.onboarding_completed ? "/app/dashboard" : "/onboarding"} replace />;
 
   return (
-    <div className="su-dark min-h-screen bg-[#05070B] font-sans text-white selection:bg-[#E6C878] selection:text-black">
+    <div ref={page} className="su-dark min-h-screen bg-[#05070B] font-sans text-white selection:bg-[#E6C878] selection:text-black">
       {/* nav */}
       <header className={"fixed inset-x-0 top-0 z-50 transition-all duration-500 " + (scrolled ? "border-b border-white/10 bg-black/70 py-3 backdrop-blur-xl" : "py-6")}>
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6">
@@ -60,7 +73,7 @@ export default function Landing() {
               <GoldButton variant="ghost" onClick={() => go("/login")}>Login</GoldButton>
             </div>
           </div>
-          <div className="su-fade relative mx-auto w-full max-w-md" style={{ animationDelay: "1200ms" }}>
+          <div data-parallax className="su-fade relative mx-auto w-full max-w-md" style={{ animationDelay: "1200ms" }}>
             <div className="relative mx-auto aspect-[7/10] w-[62%] max-h-[52vh] overflow-hidden" style={{ background: "radial-gradient(ellipse at 50% 35%, rgba(230,200,120,.6), rgba(230,200,120,.2) 65%, rgba(230,200,120,.05))", WebkitMaskImage: "radial-gradient(ellipse 62% 70% at 50% 42%, #000 50%, transparent 100%)", maskImage: "radial-gradient(ellipse 62% 70% at 50% 42%, #000 50%, transparent 100%)" }}>
               <img src="/assistant.webp" alt="Your guide" className="h-full w-full object-cover object-top mix-blend-multiply" />
             </div>
@@ -80,7 +93,7 @@ export default function Landing() {
             <p className="text-[11px] font-bold uppercase tracking-[0.5em] text-[#E6C878]">The standard</p>
             <h2 className="mt-4 max-w-3xl font-suits text-4xl font-bold leading-tight sm:text-5xl">This is not another student platform. It is where your ambition <span className="su-gold-text">starts to compound.</span></h2>
           </Reveal>
-          <div className="mt-14 grid gap-6 md:grid-cols-3">
+          <div data-standard className="mt-14 grid gap-6 md:grid-cols-3">
             {STANDARD.map((s, i) => (
               <Reveal key={s.n} delay={i * 120}>
                 <div className="su-glass su-card h-full rounded-sm p-8">
@@ -97,7 +110,7 @@ export default function Landing() {
       {/* quote band */}
       <section className="relative isolate overflow-hidden px-6 py-32">
         <SuitsScene dim />
-        <div className="relative mx-auto max-w-5xl text-center">
+        <div data-band className="relative mx-auto max-w-5xl text-center">
           <Reveal><p className="font-suits text-3xl font-semibold italic leading-snug sm:text-5xl">&ldquo;The world doesn&rsquo;t reward potential. It rewards <span className="su-gold-text not-italic">execution.</span>&rdquo;</p></Reveal>
           <div className="mt-14 grid grid-cols-3 gap-4">
             {[{ n: 50, s: "+", l: "Professions to explore" }, { n: 9, s: "", l: "Industries" }, { n: 100, s: "%", l: "Traceable scoring" }].map((x) => (

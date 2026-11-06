@@ -5,6 +5,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
@@ -19,6 +20,23 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def _normalize_debug_environment(cls, value: object) -> object:
+        """Accept deployment labels accidentally supplied through DEBUG.
+
+        Some launch environments export ``DEBUG=release`` to describe their
+        mode. Pydantic's boolean parser rejects that value before the app can
+        start, so interpret known mode labels as the corresponding debug flag.
+        """
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"release", "production", "prod"}:
+                return False
+            if normalized in {"debug", "development", "dev"}:
+                return True
+        return value
 
     # --- Core ---
     APP_NAME: str = "Arjuna AI"

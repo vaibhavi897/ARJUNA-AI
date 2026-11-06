@@ -60,39 +60,77 @@ def _client():  # noqa: ANN202
     return genai.Client(api_key=settings.GEMINI_API_KEY)
 
 
-def generate_json(prompt: str, *, retries: int = 3, temperature: float = 0.4) -> Any:
-    """Call Gemini for a JSON response, with backoff on rate limits (429/503)."""
+def _shape(schema: Any, data: Any) -> Any:
+    """Models sometimes return a bare list instead of {"field": [...]}. Wrap it when the schema has one obvious list field."""
+    if isinstance(data, list):
+        list_fields = [n for n, f in schema.model_fields.items() if "list" in str(f.annotation)]
+        required = [n for n in list_fields if schema.model_fields[n].is_required()]
+        target = required[0] if len(required) == 1 else (list_fields[0] if len(list_fields) == 1 else None)
+        if target:
+            return {target: data}
+    return data
+
+
+def _model_chain() -> list[str]:
+    chain = [settings.GEMINI_MODEL] + [m.strip() for m in (settings.GEMINI_FALLBACK_MODELS or "").split(",") if m.strip()]
+    seen: list[str] = []
+    for m in chain:
+        if m not in seen:
+            seen.append(m)
+    return seen
+
+
+def generate_json(
+    prompt: str,
+    *,
+    retries: int = 2,
+    temperature: float = 0.4,
+    max_tokens: int | None = None,
+    schema: Any = None,
+) -> Any:
+    """Call Gemini for JSON. Falls through the model chain on 429/500/503 and
+    retries with backoff. With ``schema`` (a pydantic model class) the response is
+    validated and returned as a plain dict; invalid output triggers a retry."""
     if not settings.gemini_enabled:
         raise GeminiUnavailable("GEMINI_API_KEY is not configured.")
     from google.genai import errors, types
 
     client = _client()
-    config = types.GenerateContentConfig(response_mime_type="application/json", temperature=temperature)
-    delay = 2.0
+    cfg: dict[str, Any] = {"response_mime_type": "application/json", "temperature": temperature}
+    if max_tokens:
+        cfg["max_output_tokens"] = max_tokens
+    config = types.GenerateContentConfig(**cfg)
     last: Exception | None = None
+    delay = 2.0
     for attempt in range(1, retries + 1):
-        try:
-            response = client.models.generate_content(model=settings.GEMINI_MODEL, contents=prompt, config=config)
-            text = (response.text or "").strip()
-            if text.startswith("```"):
-                text = text.strip("`").removeprefix("json").strip()
-            return json.loads(text)
-        except errors.APIError as exc:
-            last = exc
-            code = getattr(exc, "code", None)
-            if code in (429, 500, 503) and attempt < retries:
-                logger.warning("Gemini %s on attempt %d; retrying in %.0fs", code, attempt, delay)
-                time.sleep(delay)
-                delay *= 2
-                continue
-            break
-        except (json.JSONDecodeError, ValueError) as exc:
-            last = exc
-            logger.warning("Gemini returned non-JSON on attempt %d", attempt)
+        for model in _model_chain():
+            try:
+                response = client.models.generate_content(model=model, contents=prompt, config=config)
+                text = (response.text or "").strip()
+                if text.startswith("```"):
+                    text = text.strip("`").removeprefix("json").strip()
+                data = json.loads(text)
+                if schema is not None:
+                    data = schema.model_validate(_shape(schema, data)).model_dump()
+                return data
+            except errors.APIError as exc:
+                last = exc
+                code = getattr(exc, "code", None)
+                logger.warning("Gemini %s on %s (attempt %d)", code, model, attempt)
+                if code in (429, 500, 503, 404):
+                    continue  # try the next model in the chain
+                raise GeminiUnavailable(f"Gemini request failed: {exc}") from exc
+            except (json.JSONDecodeError, ValueError) as exc:  # includes pydantic ValidationError
+                last = exc
+                logger.warning("Gemini output invalid on %s (attempt %d): %s", model, attempt, str(exc)[:120])
+                break  # retry from the primary model with a fresh sample
+        if attempt < retries:
+            time.sleep(delay)
+            delay *= 2
     raise GeminiUnavailable(f"Gemini request failed: {last}")
 
 
-def cached_json(db: Session, kind: str, key_parts: tuple, prompt: str) -> dict[str, Any] | None:
+def cached_json(db: Session, kind: str, key_parts: tuple, prompt: str, **kw: Any) -> dict[str, Any] | None:
     """Return cached output, else call Gemini once and store it. None if unavailable."""
     key = make_key(kind, *key_parts)
     hit = get_cached(db, key)
@@ -101,7 +139,7 @@ def cached_json(db: Session, kind: str, key_parts: tuple, prompt: str) -> dict[s
     if not settings.gemini_enabled:
         return None
     try:
-        data = generate_json(prompt)
+        data = generate_json(prompt, **kw)
     except GeminiUnavailable as exc:
         logger.warning("%s", exc)
         return None

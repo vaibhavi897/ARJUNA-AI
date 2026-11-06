@@ -13,6 +13,14 @@ import CareerVerse from "./pages/CareerVerse";
 import CareerStory from "./pages/CareerStory";
 import CareerInsights from "./pages/CareerInsights";
 import CareerCompare from "./pages/CareerCompare";
+import LearningLayout from "./pages/learning/LearningLayout";
+import LearningOverview from "./pages/learning/Overview";
+import LearningPlanner from "./pages/learning/Planner";
+import LearningMaterials from "./pages/learning/Materials";
+import LearningYouTube from "./pages/learning/YouTube";
+import LearningNotes from "./pages/learning/Notes";
+import LearningQuizzes from "./pages/learning/Quizzes";
+import LearningProgress from "./pages/learning/Progress";
 import {
   AIAssessment,
   CareerPaths,
@@ -93,6 +101,15 @@ export default function App() {
               </Protected>
             }
           />
+          <Route path="/app/learning" element={<Protected><LearningLayout /></Protected>}>
+            <Route index element={<LearningOverview />} />
+            <Route path="planner" element={<LearningPlanner />} />
+            <Route path="materials" element={<LearningMaterials />} />
+            <Route path="youtube" element={<LearningYouTube />} />
+            <Route path="notes" element={<LearningNotes />} />
+            <Route path="quizzes" element={<LearningQuizzes />} />
+            <Route path="progress" element={<LearningProgress />} />
+          </Route>
           <Route path="/app/careerverse" element={<Protected><CareerVerse /></Protected>} />
           <Route path="/app/careerverse/compare" element={<Protected><CareerCompare /></Protected>} />
           <Route path="/app/careerverse/:slug/story" element={<Protected><CareerStory /></Protected>} />

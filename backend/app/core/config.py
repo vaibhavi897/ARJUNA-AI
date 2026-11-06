@@ -69,13 +69,13 @@ class Settings(BaseSettings):
     # --- Optional LLM provider (qualitative analysis). Unset => deterministic only.
     OPENAI_API_KEY: str | None = None
     ANTHROPIC_API_KEY: str | None = None
-    GEMINI_API_KEY: str | None = None
-    GEMINI_MODEL: str = "gemini-2.5-flash"
     LLM_MODEL: str = "claude-opus-5"
 
-    # --- CareerVerse: Gemini (keys stay server-side) ---
+    # --- Gemini (shared by Interview Arena, CareerVerse and the AI Learning Hub; keys stay server-side) ---
     GEMINI_API_KEY: str | None = None
-    GEMINI_MODEL: str = "gemini-3.8-flash"
+    GEMINI_MODEL: str = "gemini-flash-lite-latest"
+    # Comma-separated models tried in order when the primary is overloaded or missing.
+    GEMINI_FALLBACK_MODELS: str = "gemini-3.1-flash-lite,gemini-flash-latest,gemini-2.5-flash-lite"
 
     # --- CareerVerse: optional external data. Each one is independent; the
     # module works from the seeded dataset when any of them is unset.

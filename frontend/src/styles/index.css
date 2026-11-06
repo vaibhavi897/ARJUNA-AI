@@ -389,3 +389,20 @@
 .cv-tr-11 { animation: tr-diag .8s cubic-bezier(.7,0,.2,1) both; }
 .cv-tr-12 { animation: tr-split .8s cubic-bezier(.7,0,.2,1) both; }
 @media (prefers-reduced-motion: reduce) { [class*="cv-tr-"] { animation: none !important; } }
+
+/* ---------- AI Learning Hub: notebooks ---------- */
+@keyframes nb-open { 0% { transform: perspective(1200px) rotateY(0); } 100% { transform: perspective(1200px) rotateY(-155deg); } }
+@keyframes nb-flip { 0% { opacity: 0; transform: perspective(1400px) rotateY(-14deg) translateX(-14px); } 100% { opacity: 1; transform: none; } }
+@keyframes nb-shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-9px); } 40%, 80% { transform: translateX(9px); } }
+@keyframes nb-shackle { 0% { transform: translateY(0); } 100% { transform: translateY(-7px) rotate(-18deg); } }
+@keyframes nb-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(230, 200, 120, 0); } 50% { box-shadow: 0 0 36px 4px rgba(230, 200, 120, .45); } }
+.nb-book { transform-style: preserve-3d; transition: transform .45s cubic-bezier(.2, .8, .2, 1), box-shadow .45s; transform-origin: left center; }
+.nb-book:hover { transform: perspective(900px) rotateY(-14deg) translateY(-8px); box-shadow: 18px 22px 36px -14px rgba(0, 0, 0, .55); }
+.nb-opening { animation: nb-open .9s cubic-bezier(.5, 0, .2, 1) forwards; z-index: 5; }
+.nb-flip { animation: nb-flip .5s cubic-bezier(.2, .8, .2, 1) both; }
+.nb-shake { animation: nb-shake .45s ease; }
+.nb-unlocked { animation: nb-glow 1s ease; }
+.nb-paper { background-color: #FFFDF6; background-image: linear-gradient(to bottom, transparent 31px, rgba(34, 154, 99, .16) 32px); background-size: 100% 32px; background-position: 0 6px; }
+.nb-paper-dark { background-color: #1A1F2B; background-image: linear-gradient(to bottom, transparent 31px, rgba(255, 255, 255, .07) 32px); background-size: 100% 32px; }
+.nb-shelf { background: linear-gradient(180deg, #7A5336 0%, #5B3B24 60%, #43291A 100%); box-shadow: 0 10px 18px -6px rgba(0, 0, 0, .35), inset 0 2px 0 rgba(255, 255, 255, .15); }
+@media (prefers-reduced-motion: reduce) { .nb-opening, .nb-flip, .nb-shake, .nb-unlocked { animation: none !important; } .nb-book, .nb-book:hover { transform: none; transition: none; } }

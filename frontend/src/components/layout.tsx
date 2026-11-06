@@ -8,6 +8,7 @@ import {
   Mic2,
   LogOut,
   Compass,
+  GraduationCap,
   Menu,
   Settings as SettingsIcon,
   Sparkles,
@@ -69,6 +70,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { to: "/app/dashboard", label: "Student Dashboard", icon: <LayoutDashboard size={18} />, ready: true },
   { to: "/app/interview-arena", label: "Interview Arena", icon: <Mic2 size={18} />, ready: true },
+  { to: "/app/learning", label: "AI Learning Hub", icon: <GraduationCap size={18} />, ready: true },
   { to: "/app/careerverse", label: "CareerVerse", icon: <Compass size={18} />, ready: true },
   { to: "/app/settings", label: "Settings", icon: <SettingsIcon size={18} />, ready: true },
 ];

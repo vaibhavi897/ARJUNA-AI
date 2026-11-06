@@ -6,6 +6,12 @@ import { ApiError, api, type InterviewSession, type InterviewMessage } from "../
 
 const DOMAINS = ["Software Engineering", "ML/AI", "Data Analytics", "Management Consulting", "Finance/Investment Banking", "Corporate Risk", "Product Management", "HR/Management"];
 const PERSONAS = ["Technical Interviewer", "HR Interviewer", "Finance Expert"];
+const SENIORITY_LEVELS = [
+  "Junior (0–3 years)",
+  "Mid-Level (4–8 years)",
+  "Senior (9–15 years)",
+  "Expert/Leadership (15+ years)",
+];
 const AREAS = [
   { key: "technical", label: "Technical" },
   { key: "behavioural", label: "HR & Behavioural" },
@@ -41,6 +47,9 @@ export default function InterviewArena() {
   const [history, setHistory] = useState<InterviewSession[]>([]);
   const [domain, setDomain] = useState(DOMAINS[0]);
   const [personas, setPersonas] = useState<string[]>(["Technical Interviewer", "HR Interviewer"]);
+  const [seniority, setSeniority] = useState(SENIORITY_LEVELS[1]);
+  const [jobDescription, setJobDescription] = useState("");
+  const [uploadingJd, setUploadingJd] = useState(false);
   const [focus, setFocus] = useState<Focus>(DEFAULTS[DOMAINS[0]]);
   const [consent, setConsent] = useState(false);
   const [session, setSession] = useState<InterviewSession | null>(null);
@@ -143,7 +152,7 @@ export default function InterviewArena() {
           stream.getAudioTracks().forEach((track) => track.addEventListener("ended", () => { setMicOn(false); addSignal("microphone_disconnected", "Microphone track disconnected."); }));
         } catch { setError("Camera/microphone access was unavailable. You can continue with text and browser speech tools."); }
       }
-      const created = await api.startInterview({ domain, personas, focus, consent_media: consent });
+      const created = await api.startInterview({ domain, personas, focus, consent_media: consent, seniority, job_description: jobDescription.trim() || null });
       setSignals([]); multipleFacesReported.current = false; setSession(created); setSelectedReport(null); setElapsed(0); setAnswer("");
       if (videoRef.current && stream) videoRef.current.srcObject = stream;
       speak([...created.transcript].reverse().find((m) => m.role === "interviewer")?.text ?? "");
@@ -246,6 +255,8 @@ export default function InterviewArena() {
         <Card className="overflow-hidden p-0"><div className="mesh-forest p-6 text-white sm:p-8"><div className="flex items-center gap-2 text-brand-300"><Activity size={17} /><span className="text-2xs font-semibold uppercase tracking-[0.16em]">Arjuna Interview Arena</span></div><h2 className="mt-3 max-w-2xl font-display text-3xl font-extrabold text-white sm:text-4xl">Walk into your next interview prepared.</h2><p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/70">Practice with adaptive AI interviewers using your profile, resume, projects, experience, and readiness insights. No job description needed.</p><div className="mt-5 flex flex-wrap gap-2 text-xs text-white/70"><span className="rounded-full bg-white/10 px-3 py-1.5">Flexible duration · ~40 min typical</span><span className="rounded-full bg-white/10 px-3 py-1.5">Voice or text responses</span><span className="rounded-full bg-white/10 px-3 py-1.5">Personalized follow-ups</span></div></div>
           <div className="space-y-6 p-5 sm:p-7"><section><label htmlFor="domain" className="mb-2 block text-sm font-bold">Target role / domain</label><select id="domain" value={domain} onChange={(e) => setDomain(e.target.value)} className="input-base">{DOMAINS.map((d) => <option key={d}>{d}</option>)}</select><p className="mt-1.5 text-xs text-ink-400">Interview questions adapt to the domain you select.</p></section>
             <section><div className="mb-2 flex items-end justify-between gap-3"><div><p className="text-sm font-bold">AI interviewer personas</p><p className="text-xs text-ink-400">Select 1–3 personas</p></div><span className="text-xs font-semibold text-brand-700">{personas.length}/3</span></div><div className="grid gap-2 sm:grid-cols-2">{PERSONAS.map((p) => <button type="button" key={p} onClick={() => togglePersona(p)} className={`flex items-center gap-2 rounded-xl border p-3 text-left text-sm font-medium transition-colors ${personas.includes(p) ? "border-brand-300 bg-brand-50 text-brand-800" : "border-line bg-white text-ink-600 hover:bg-sage-50"}`}><span className={`grid h-5 w-5 place-items-center rounded-full border ${personas.includes(p) ? "border-brand-600 bg-brand-600 text-white" : "border-line-strong"}`}>{personas.includes(p) && <CheckCircle2 size={14} />}</span>{p}</button>)}</div></section>
+            <section><label htmlFor="seniority" className="mb-2 block text-sm font-bold">Interviewer seniority</label><select id="seniority" value={seniority} onChange={(e) => setSeniority(e.target.value)} className="input-base">{SENIORITY_LEVELS.map((level) => <option key={level}>{level}</option>)}</select><p className="mt-1.5 text-xs text-ink-400">Sets question complexity, expected depth, and follow-up rigor independently of persona.</p></section>
+            <section className="space-y-3"><div><label htmlFor="job-description" className="block text-sm font-bold">Job description <span className="font-normal text-ink-400">(optional)</span></label><p className="mt-1 text-xs text-ink-400">Paste the role details or upload a PDF/DOCX to tailor questions to its responsibilities and requirements.</p></div><textarea id="job-description" rows={5} maxLength={20000} value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} placeholder="Paste a job description here…" className="input-base resize-y" /><div className="flex flex-wrap items-center justify-between gap-3"><label className="inline-flex cursor-pointer items-center rounded-lg border border-line px-3 py-2 text-sm font-medium text-ink-700 hover:bg-sage-50"><input type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" disabled={uploadingJd} className="sr-only" onChange={async (event) => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; if (!file) return; setUploadingJd(true); setError(null); try { const result = await api.extractInterviewJobDescription(file); setJobDescription(result.text); } catch (e) { setError(e instanceof ApiError ? e.message : "Could not read that job description file."); } finally { setUploadingJd(false); } }} />{uploadingJd ? "Reading file…" : "Upload PDF or DOCX"}</label><span className="text-xs text-ink-400">{jobDescription.length.toLocaleString()} / 20,000</span>{jobDescription && <button type="button" onClick={() => setJobDescription("")} className="text-xs font-semibold text-brand-700 hover:text-brand-800">Clear description</button>}</div></section>
             <section><div className="flex flex-wrap items-end justify-between gap-2"><div><p className="text-sm font-bold">Interview focus</p><p className="text-xs text-ink-400">Recommended mix for {domain}</p></div><button type="button" onClick={() => setFocus(DEFAULTS[domain])} className="text-xs font-semibold text-brand-700 transition-colors hover:text-brand-800">Reset to Recommended</button></div>
               <div className="mt-4 overflow-hidden rounded-full bg-sage-100" role="img" aria-label={`Focus distribution: ${AREAS.map(({ key, label }) => `${label} ${focus[key]} percent`).join(", ")}`}><div className="flex h-3 w-full">{AREAS.map(({ key, label }) => <div key={key} title={`${label}: ${focus[key]}%`} style={{ width: `${focus[key]}%`, backgroundColor: FOCUS_COLORS[key] }} />)}</div></div>
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">{AREAS.map(({ key, label }) => <span key={key} className="inline-flex items-center gap-1.5 text-2xs text-ink-500"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: FOCUS_COLORS[key] }} />{label} {focus[key]}%</span>)}</div>

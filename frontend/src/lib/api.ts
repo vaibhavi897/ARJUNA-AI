@@ -173,6 +173,11 @@ export const api = {
   interviewHistory: () => request<InterviewSession[]>("/interviews"),
   interviewSession: (id: number) => request<InterviewSession>(`/interviews/${id}`),
   startInterview: (body: unknown) => request<InterviewSession>("/interviews", { method: "POST", body }),
+  extractInterviewJobDescription: (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return request<{ text: string }>("/interviews/job-description", { method: "POST", formData });
+  },
   answerInterview: (id: number, answer: string) => request<InterviewAnswerResult>(`/interviews/${id}/answer`, { method: "POST", body: { answer } }),
   endInterview: (id: number, integrity_signals: IntegritySignal[]) => request<InterviewSession>(`/interviews/${id}/end`, { method: "POST", body: { integrity_signals } }),
 };
@@ -687,6 +692,8 @@ export type InterviewSession = {
   report: Record<string, any> | null;
   personas: string[];
   focus: Record<string, number>;
+  seniority?: string;
+  has_job_description?: boolean;
   transcript: InterviewMessage[];
   integrity_signals: IntegritySignal[];
   consent_media?: boolean;

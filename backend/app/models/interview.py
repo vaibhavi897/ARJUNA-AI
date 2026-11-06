@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -18,6 +18,8 @@ class InterviewSession(Base, TimestampMixin):
     domain: Mapped[str] = mapped_column(String(100), nullable=False)
     personas: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     focus: Mapped[dict[str, int]] = mapped_column(JSONB, nullable=False, default=dict)
+    seniority: Mapped[str] = mapped_column(String(30), nullable=False, default="Mid-Level")
+    job_description: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active", index=True)
     consent_media: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     started_at: Mapped[str] = mapped_column(String(40), nullable=False)

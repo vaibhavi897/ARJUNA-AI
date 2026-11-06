@@ -1,4 +1,5 @@
 /** App shell, sidebar, top bar and public navigation. */
+import Assistant from "./Assistant";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -10,6 +11,7 @@ import {
   Compass,
   BriefcaseBusiness,
   GraduationCap,
+  FileText,
   Menu,
   Settings as SettingsIcon,
   Sparkles,
@@ -72,8 +74,9 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/app/dashboard", label: "Student Dashboard", icon: <LayoutDashboard size={18} />, ready: true },
   { to: "/app/interview-arena", label: "Interview Arena", icon: <Mic2 size={18} />, ready: true },
   { to: "/app/learning", label: "AI Learning Hub", icon: <GraduationCap size={18} />, ready: true },
+  { to: "/app/resume-builder", label: "Dynamic Resume Builder", icon: <FileText size={18} />, ready: true },
   { to: "/app/careerverse", label: "CareerVerse", icon: <Compass size={18} />, ready: true },
-  { to: "/app/career-connect", label: "Career Connect", icon: <BriefcaseBusiness size={18} />, ready: true },
+  { to: "/app/career-connect/opportunities", label: "Career Connect", icon: <BriefcaseBusiness size={18} />, ready: true },
   { to: "/app/settings", label: "Settings", icon: <SettingsIcon size={18} />, ready: true },
 ];
 
@@ -108,40 +111,41 @@ function SidebarContent({
           </p>
         ) : null}
         {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            onClick={onNavigate}
-            title={collapsed ? item.label : undefined}
-            className={({ isActive }) =>
-              cn(
-                "group relative flex items-center gap-3 rounded-xl px-2.5 py-2.5 text-sm font-medium transition-all duration-200",
-                collapsed && "justify-center px-2",
-                isActive
-                  ? "bg-white/[0.14] text-white shadow-inset"
-                  : "text-white/65 hover:bg-white/[0.07] hover:text-white"
-              )
-            }
-          >
-            {({ isActive }) => (
-              <>
-                {isActive ? (
-                  <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-brand-400" />
-                ) : null}
-                <span className="shrink-0">{item.icon}</span>
-                {!collapsed ? (
-                  <>
-                    <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                    {!item.ready ? (
-                      <span className="shrink-0 rounded-full bg-white/10 px-1.5 py-0.5 text-2xs font-semibold text-white/55">
-                        Soon
-                      </span>
-                    ) : null}
-                  </>
-                ) : null}
-              </>
-            )}
-          </NavLink>
+          <div key={item.to}>
+            <NavLink
+              to={item.to}
+              onClick={onNavigate}
+              title={collapsed ? item.label : undefined}
+              className={({ isActive }) =>
+                cn(
+                  "group relative flex items-center gap-3 rounded-xl px-2.5 py-2.5 text-sm font-medium transition-all duration-200",
+                  collapsed && "justify-center px-2",
+                  isActive
+                    ? "bg-white/[0.14] text-white shadow-inset"
+                    : "text-white/65 hover:bg-white/[0.07] hover:text-white"
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive ? (
+                    <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-brand-400" />
+                  ) : null}
+                  <span className="shrink-0">{item.icon}</span>
+                  {!collapsed ? (
+                    <>
+                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                      {!item.ready ? (
+                        <span className="shrink-0 rounded-full bg-white/10 px-1.5 py-0.5 text-2xs font-semibold text-white/55">
+                          Soon
+                        </span>
+                      ) : null}
+                    </>
+                  ) : null}
+                </>
+              )}
+            </NavLink>
+          </div>
         ))}
       </nav>
 
@@ -283,6 +287,7 @@ export function AppShell({
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1400px]">{children}</div>
         </main>
+        <Assistant />
       </div>
     </div>
   );

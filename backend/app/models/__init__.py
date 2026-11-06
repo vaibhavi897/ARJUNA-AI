@@ -40,6 +40,7 @@ from app.models.careerverse import (
     UserCareerProgress,
     UserCareerView,
 )
+from app.models.career_connect import CareerConnectSavedItem
 from app.models.learning import (
     GeneratedMaterial,
     LearningEvent,
@@ -63,6 +64,7 @@ from app.models.learning import (
     TopicProficiency,
     YoutubeImport,
 )
+from app.models.resume_builder import ResumeVersion
 from app.models.profile import (
     ACADEMIC_LEVELS,
     ACHIEVEMENT_CATEGORIES,
@@ -80,9 +82,9 @@ from app.models.profile import (
 )
 from app.models.user import ONBOARDING_TOTAL_STEPS, StudentSettings, User
 from app.models.interview import InterviewSession
-from app.models.career_connect import CareerConnectContact, CareerConnectJob, CareerConnectTrackerItem
 
 __all__ = [
+    "ResumeVersion",
     "GeneratedMaterial",
     "LearningEvent",
     "LearningGoal",
@@ -114,9 +116,7 @@ __all__ = [
     "Base",
     "Career",
     "CareerAiOutput",
-    "CareerConnectContact",
-    "CareerConnectJob",
-    "CareerConnectTrackerItem",
+    "CareerConnectSavedItem",
     "CareerCompany",
     "CareerDomain",
     "CareerExit",

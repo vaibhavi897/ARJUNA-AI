@@ -17,3 +17,6 @@ scikit-learn>=1.5.0
 pandas>=2.2.0
 numpy>=2.0.0
 youtube-transcript-api>=1.0.0
+reportlab>=4.2.0
+matplotlib>=3.9.0
+fonttools>=4.53.0

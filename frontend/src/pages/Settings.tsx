@@ -159,7 +159,6 @@ export default function Settings() {
           <RedirectSection
             icon={<Zap size={18} />}
             title="Skills"
-            body="Skills are edited in the onboarding skills step, which has the search, proficiency controls and custom-skill entry."
             count={`${profile.skills.length} skills · ${profile.skills.filter((s) => s.is_evidence_backed).length} evidence-backed`}
             to="/onboarding?step=3"
             items={profile.skills.map((skill) => ({
@@ -173,7 +172,6 @@ export default function Settings() {
           <RedirectSection
             icon={<FolderGit2 size={18} />}
             title="Projects"
-            body="Projects are edited in the onboarding projects step, which includes technologies, contribution and links."
             count={`${profile.projects.length} projects`}
             to="/onboarding?step=4"
             items={profile.projects.map((project) => ({
@@ -190,7 +188,6 @@ export default function Settings() {
             <RedirectSection
               icon={<Briefcase size={18} />}
               title="Experience"
-              body="Internships, work, positions of responsibility, certifications and achievements are edited together in step 5."
               count={`${profile.experiences.length} experience · ${profile.certifications.length} certifications · ${profile.achievements.length} achievements`}
               to="/onboarding?step=5"
               items={[
@@ -240,7 +237,6 @@ export default function Settings() {
           <RedirectSection
             icon={<Target size={18} />}
             title="Career targets"
-            body="Change which roles you are measured against. Updating this reshapes the dashboard and regenerates your roadmap."
             count={`${profile.preferences.length} target roles`}
             to="/onboarding?step=7"
             items={profile.preferences.map((item) => ({
@@ -519,14 +515,12 @@ function ProfileSection({
 function RedirectSection({
   icon,
   title,
-  body,
   count,
   to,
   items,
 }: {
   icon: React.ReactNode;
   title: string;
-  body: string;
   count: string;
   to: string;
   items: { label: string; meta: string; tone: "brand" | "neutral" | "forest" }[];
@@ -543,10 +537,6 @@ function RedirectSection({
           </Link>
         }
       />
-      <InlineNote tone="info" icon={<SlidersHorizontal size={15} />}>
-        {body} Saving there recalculates the affected role scores immediately.
-      </InlineNote>
-
       {items.length ? (
         <div className="mt-4 divide-y divide-line overflow-hidden rounded-xl border border-line">
           {items.map((item, index) => (
@@ -667,10 +657,6 @@ function AccountSection({
             description="Stored as a preference for a future release."
           />
         </div>
-        <InlineNote tone="info">
-          Notification toggles are saved to your account but no emails are sent in this phase - the
-          delivery pipeline is not built yet.
-        </InlineNote>
       </Card>
 
       <Card className="p-5">

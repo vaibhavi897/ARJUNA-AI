@@ -8,6 +8,7 @@ fields are filled, and existing entries are left alone.
 from __future__ import annotations
 
 import datetime as dt
+import re
 import uuid
 from pathlib import Path
 from typing import Any
@@ -47,6 +48,35 @@ from app.modules.resume.quality import build_quality_report
 logger = get_logger(__name__)
 
 CHUNK_SIZE = 64 * 1024
+
+_MONTHS = {
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+    "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+}
+_ONGOING = {"present", "current", "ongoing"}
+
+
+def parse_month_year(raw: Any) -> tuple[dt.date | None, bool]:
+    """``"Mar 2026"`` -> ``(date(2026, 3, 1), False)``; ``"Present"`` -> ongoing."""
+    value = str(raw or "").strip().lower()
+    if not value:
+        return None, False
+    if value in _ONGOING:
+        return None, True
+    month_match = re.match(r"([a-z]{3})[a-z]*\.?\s*,?\s*((?:19|20)\d{2})", value)
+    if month_match:
+        return dt.date(int(month_match.group(2)), _MONTHS[month_match.group(1)], 1), False
+    year_match = re.fullmatch(r"(19|20)\d{2}", value)
+    if year_match:
+        return dt.date(int(year_match.group(0)), 1, 1), False
+    return None, False
+
+
+def _months_between(start: dt.date | None, end: dt.date | None) -> int | None:
+    if start is None or end is None:
+        return None
+    months = (end.year - start.year) * 12 + (end.month - start.month)
+    return max(months, 0) or 1
 
 
 def catalogue_map(db: Session) -> dict[str, str]:
@@ -367,11 +397,19 @@ def apply_resume_data(
         item = parsed_projects.get(str(title).lower())
         if item is None or str(title).lower() in existing_titles:
             continue
+        start_date, _ = parse_month_year(item.get("start_raw"))
+        end_date, ongoing = parse_month_year(item.get("end_raw"))
         project = Project(
             user_id=user.id,
             title=str(item.get("title"))[:180],
             description=(item.get("description") or None),
             category="From resume",
+            github_url=(item.get("github_url") or None),
+            live_url=(item.get("live_url") or None),
+            start_date=start_date,
+            end_date=end_date,
+            is_ongoing=ongoing,
+            duration_months=_months_between(start_date, end_date),
             source="resume",
         )
         db.add(project)
@@ -397,6 +435,8 @@ def apply_resume_data(
         item = parsed_experience.get(str(key).lower())
         if item is None or str(key).lower() in existing_experience:
             continue
+        start_date, _ = parse_month_year(item.get("start_raw"))
+        end_date, ongoing = parse_month_year(item.get("end_raw"))
         db.add(
             Experience(
                 user_id=user.id,
@@ -404,6 +444,11 @@ def apply_resume_data(
                 organization=str(item.get("organization"))[:180],
                 title=str(item.get("title"))[:180],
                 description=item.get("description"),
+                start_date=start_date,
+                end_date=end_date,
+                is_current=ongoing,
+                duration_months=_months_between(start_date, end_date),
+                skills_used=list(item.get("skills_used") or []),
                 source="resume",
             )
         )

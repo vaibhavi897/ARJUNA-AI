@@ -2,18 +2,13 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  BookOpenCheck,
   ChevronLeft,
   ChevronRight,
-  ClipboardList,
-  Compass,
-  FileText,
   LayoutDashboard,
   LogOut,
   Menu,
   Settings as SettingsIcon,
   Sparkles,
-  TrendingUp,
   X,
 } from "lucide-react";
 import { useAuth } from "../lib/auth";
@@ -67,13 +62,10 @@ type NavItem = {
   ready: boolean;
 };
 
+// Only shipped modules are listed. The placeholder routes still resolve, so a
+// teammate can add their entry back here the moment the feature is real.
 const NAV_ITEMS: NavItem[] = [
   { to: "/app/dashboard", label: "Student Dashboard", icon: <LayoutDashboard size={18} />, ready: true },
-  { to: "/app/placement-prep", label: "Placement Prep", icon: <BookOpenCheck size={18} />, ready: false },
-  { to: "/app/resume-builder", label: "Resume Builder", icon: <FileText size={18} />, ready: false },
-  { to: "/app/ai-assessment", label: "AI Assessment", icon: <ClipboardList size={18} />, ready: false },
-  { to: "/app/career-paths", label: "Career Paths", icon: <Compass size={18} />, ready: false },
-  { to: "/app/my-progress", label: "My Progress", icon: <TrendingUp size={18} />, ready: false },
   { to: "/app/settings", label: "Settings", icon: <SettingsIcon size={18} />, ready: true },
 ];
 

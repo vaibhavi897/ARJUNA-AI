@@ -45,7 +45,7 @@ function Placeholder({
               </span>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-display text-xl font-extrabold">{title}</h2>
+                  <h2 className="font-display text-xl font-extrabold text-white">{title}</h2>
                   <Badge tone="forest" className="border-white/20 bg-white/15 text-white">
                     <Construction size={11} /> Not built yet
                   </Badge>

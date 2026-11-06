@@ -363,7 +363,7 @@ export default function Landing() {
               <p className="text-2xs font-semibold uppercase tracking-[0.14em] text-white/50">
                 Sample roadmap action
               </p>
-              <h3 className="mt-2 font-display text-xl font-bold">Learn LBO Modelling</h3>
+              <h3 className="mt-2 font-display text-xl font-bold text-white">Learn LBO Modelling</h3>
               <div className="mt-3 flex flex-wrap gap-2">
                 <span className="rounded-full bg-white/15 px-2.5 py-1 text-2xs font-semibold">
                   High priority

@@ -181,7 +181,7 @@ export default function Dashboard() {
                     ? "AI-generated greeting"
                     : "Personalised greeting"}
                 </p>
-                <h2 className="mt-1.5 text-balance font-display text-xl font-extrabold leading-snug sm:text-2xl">
+                <h2 className="mt-1.5 text-balance font-display text-xl font-extrabold leading-snug text-white sm:text-2xl">
                   {welcome.greeting}
                 </h2>
                 <div className="mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-white/65">

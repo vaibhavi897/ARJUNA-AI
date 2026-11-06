@@ -19,13 +19,9 @@ def ai_mode() -> str:
     return "llm_assisted" if settings.llm_enabled else "rule_based"
 
 
-def _time_greeting(now: dt.datetime) -> str:
-    hour = now.hour
-    if hour < 12:
-        return "Good morning"
-    if hour < 17:
-        return "Good afternoon"
-    return "Good evening"
+# Time-neutral: the server clock is not the student's, so a "Good morning"
+# that lands at midnight reads worse than no time reference at all.
+GREETING_OPENER = "Greetings"
 
 
 def build_greeting(
@@ -40,7 +36,7 @@ def build_greeting(
     """One personalised line that always references real numbers."""
     now = now or dt.datetime.now()
     first_name = full_name.split()[0] if full_name else "there"
-    opener = f"{_time_greeting(now)}, {first_name}."
+    opener = f"{GREETING_OPENER}, {first_name}."
 
     if not role_scores:
         return (

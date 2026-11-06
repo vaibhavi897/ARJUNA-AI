@@ -26,8 +26,8 @@ import {
   CareerPaths,
   MyProgress,
   PlacementPrep,
-  ResumeBuilder,
 } from "./pages/Placeholders";
+import ResumeBuilder from "./pages/ResumeBuilder";
 
 /** Requires a session. Unfinished onboarding is redirected to the wizard. */
 function Protected({

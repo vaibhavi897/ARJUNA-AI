@@ -1,4 +1,5 @@
 /** App shell, sidebar, top bar and public navigation. */
+import Assistant from "./Assistant";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -9,6 +10,7 @@ import {
   LogOut,
   Compass,
   GraduationCap,
+  FileText,
   Menu,
   Settings as SettingsIcon,
   Sparkles,
@@ -71,6 +73,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/app/dashboard", label: "Student Dashboard", icon: <LayoutDashboard size={18} />, ready: true },
   { to: "/app/interview-arena", label: "Interview Arena", icon: <Mic2 size={18} />, ready: true },
   { to: "/app/learning", label: "AI Learning Hub", icon: <GraduationCap size={18} />, ready: true },
+  { to: "/app/resume-builder", label: "Dynamic Resume Builder", icon: <FileText size={18} />, ready: true },
   { to: "/app/careerverse", label: "CareerVerse", icon: <Compass size={18} />, ready: true },
   { to: "/app/settings", label: "Settings", icon: <SettingsIcon size={18} />, ready: true },
 ];
@@ -281,6 +284,7 @@ export function AppShell({
         <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-[1400px]">{children}</div>
         </main>
+        <Assistant />
       </div>
     </div>
   );

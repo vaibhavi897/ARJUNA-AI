@@ -42,24 +42,32 @@ export default function Landing() {
       {/* hero */}
       <section className="relative isolate flex min-h-screen items-center overflow-hidden">
         <SuitsScene />
-        <div className="relative mx-auto w-full max-w-7xl px-6 pb-24 pt-32">
-          <p className="su-fade mb-6 flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.5em] text-[#E6C878]" style={{ animationDelay: "200ms" }}>
-            <span className="h-px w-12 bg-[#E6C878]" /> For the ambitious
-          </p>
-          <h1 className="font-suits text-5xl font-bold leading-[1.02] tracking-tight sm:text-7xl lg:text-[5.6rem]">
-            <Words text="Winners don't make excuses." delay={350} step={120} />
-            <br />
-            <Words wordClass="su-gold-text" text="They make moves." delay={1300} step={150} />
-          </h1>
-          <p className="su-rise mt-8 max-w-xl text-lg leading-8 text-white/70" style={{ animationDelay: "1900ms" }}>
-            ARJUNA AI is where ambition gets a system. Measure your readiness, close the gaps, and walk into every room already prepared.
-          </p>
-          <div className="su-rise mt-10 flex flex-wrap items-center gap-4" style={{ animationDelay: "2200ms" }}>
-            <GoldButton onClick={() => go("/register")}>Register <ArrowRight size={16} /></GoldButton>
-            <GoldButton variant="ghost" onClick={() => go("/login")}>Login</GoldButton>
+        <div className="relative mx-auto grid w-full max-w-7xl items-center gap-8 px-6 pb-24 pt-32 lg:grid-cols-[1.15fr_0.85fr]">
+          <div>
+            <p className="su-fade mb-6 flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.5em] text-[#E6C878]" style={{ animationDelay: "200ms" }}>
+              <span className="h-px w-12 bg-[#E6C878]" /> For the ambitious
+            </p>
+            <h1 className="font-suits text-5xl font-bold leading-[1.02] tracking-tight sm:text-7xl lg:text-[5.2rem]">
+              <Words text="Winners don't make excuses." delay={350} step={120} />
+              <br />
+              <Words wordClass="su-gold-text" text="They make moves." delay={1300} step={150} />
+            </h1>
+            <p className="su-rise mt-8 max-w-xl text-lg leading-8 text-white/70" style={{ animationDelay: "1900ms" }}>
+              ARJUNA AI is where ambition gets a system. Measure your readiness, close the gaps, and walk into every room already prepared.
+            </p>
+            <div className="su-rise mt-10 flex flex-wrap items-center gap-4" style={{ animationDelay: "2200ms" }}>
+              <GoldButton onClick={() => go("/register")}>Register <ArrowRight size={16} /></GoldButton>
+              <GoldButton variant="ghost" onClick={() => go("/login")}>Login</GoldButton>
+            </div>
           </div>
-          <div className="su-fade mt-16 max-w-2xl border-l-2 border-[#E6C878]/70 pl-6" style={{ animationDelay: "2800ms" }}>
-            <QuoteRotator className="min-h-[96px] text-xl leading-8 text-white/85 sm:text-2xl" start={1} />
+          <div className="su-fade relative mx-auto w-full max-w-md" style={{ animationDelay: "1200ms" }}>
+            <div className="relative mx-auto aspect-[7/10] w-[62%] max-h-[52vh] overflow-hidden" style={{ background: "radial-gradient(ellipse at 50% 35%, rgba(230,200,120,.6), rgba(230,200,120,.2) 65%, rgba(230,200,120,.05))", WebkitMaskImage: "radial-gradient(ellipse 62% 70% at 50% 42%, #000 50%, transparent 100%)", maskImage: "radial-gradient(ellipse 62% 70% at 50% 42%, #000 50%, transparent 100%)" }}>
+              <img src="/assistant.webp" alt="Your guide" className="h-full w-full object-cover object-top mix-blend-multiply" />
+            </div>
+            <div className="relative -mt-10 rounded-sm border border-[#E6C878]/50 bg-black/70 p-5 shadow-[0_20px_60px_-20px_rgba(230,200,120,.5)] backdrop-blur-md">
+              <span className="absolute -top-2 left-12 h-4 w-4 rotate-45 border-l border-t border-[#E6C878]/50 bg-black/70" aria-hidden />
+              <QuoteRotator className="min-h-[104px] text-lg leading-7 text-white/90" start={1} />
+            </div>
           </div>
         </div>
         <a href="#standard" aria-label="Scroll" className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce text-white/50 hover:text-[#E6C878]"><ChevronDown /></a>

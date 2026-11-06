@@ -63,6 +63,7 @@ from app.models.learning import (
     TopicProficiency,
     YoutubeImport,
 )
+from app.models.resume_builder import ResumeVersion
 from app.models.profile import (
     ACADEMIC_LEVELS,
     ACHIEVEMENT_CATEGORIES,
@@ -82,6 +83,7 @@ from app.models.user import ONBOARDING_TOTAL_STEPS, StudentSettings, User
 from app.models.interview import InterviewSession
 
 __all__ = [
+    "ResumeVersion",
     "GeneratedMaterial",
     "LearningEvent",
     "LearningGoal",

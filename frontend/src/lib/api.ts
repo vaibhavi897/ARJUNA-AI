@@ -169,6 +169,12 @@ export const api = {
     request<StudentSettings>("/settings", { method: "PUT", body }),
   updateAccount: (body: unknown) =>
     request<ActionResult>("/settings/account", { method: "PUT", body }),
+  // ---- Interview Arena ----
+  interviewHistory: () => request<InterviewSession[]>("/interviews"),
+  interviewSession: (id: number) => request<InterviewSession>(`/interviews/${id}`),
+  startInterview: (body: unknown) => request<InterviewSession>("/interviews", { method: "POST", body }),
+  answerInterview: (id: number, answer: string) => request<InterviewAnswerResult>(`/interviews/${id}/answer`, { method: "POST", body: { answer } }),
+  endInterview: (id: number, integrity_signals: IntegritySignal[]) => request<InterviewSession>(`/interviews/${id}/end`, { method: "POST", body: { integrity_signals } }),
 };
 
 // ---------------------------------------------------------------------------
@@ -651,4 +657,42 @@ export type StudentSettings = {
   profile_visibility: string;
   theme: string;
   auto_recalculate_scores: boolean;
+};
+
+export type IntegritySignal = { type: string; at: string; detail?: string };
+export type InterviewEvaluation = {
+  score?: number;
+  feedback?: string;
+  strengths?: string[];
+  improvements?: string[];
+  better_answer?: string;
+  explanation?: string;
+};
+export type InterviewMessage = {
+  role: "interviewer" | "student";
+  text: string;
+  question?: string;
+  category?: string;
+  persona?: string;
+  at?: string;
+  evaluation?: InterviewEvaluation;
+};
+export type InterviewSession = {
+  id: number;
+  domain: string;
+  status: "active" | "completed";
+  started_at: string;
+  ended_at: string | null;
+  attempted_count: number;
+  report: Record<string, any> | null;
+  personas: string[];
+  focus: Record<string, number>;
+  transcript: InterviewMessage[];
+  integrity_signals: IntegritySignal[];
+};
+export type InterviewAnswerResult = {
+  session: InterviewSession;
+  evaluation: InterviewEvaluation;
+  closing: boolean;
+  message?: string | null;
 };

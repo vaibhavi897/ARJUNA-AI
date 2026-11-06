@@ -7,6 +7,7 @@ import { Login, Register } from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
+import InterviewArena from "./pages/InterviewArena";
 import {
   AIAssessment,
   CareerPaths,
@@ -83,6 +84,14 @@ export default function App() {
             element={
               <Protected>
                 <Dashboard />
+              </Protected>
+            }
+          />
+          <Route
+            path="/app/interview-arena"
+            element={
+              <Protected>
+                <InterviewArena />
               </Protected>
             }
           />

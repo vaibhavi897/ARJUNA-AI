@@ -40,6 +40,7 @@ from app.models.profile import (
     StudentSkill,
 )
 from app.models.user import ONBOARDING_TOTAL_STEPS, StudentSettings, User
+from app.models.interview import InterviewSession
 
 __all__ = [
     "ACADEMIC_LEVELS",
@@ -56,6 +57,7 @@ __all__ = [
     "GAP_STATUSES",
     "IMPORTANCE_LEVELS",
     "ImprovementRoadmap",
+    "InterviewSession",
     "JobRole",
     "ONBOARDING_TOTAL_STEPS",
     "PROFICIENCY_LEVELS",

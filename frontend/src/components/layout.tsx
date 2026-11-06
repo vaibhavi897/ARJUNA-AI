@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LayoutDashboard,
+  Mic2,
   LogOut,
   Menu,
   Settings as SettingsIcon,
@@ -66,6 +67,7 @@ type NavItem = {
 // teammate can add their entry back here the moment the feature is real.
 const NAV_ITEMS: NavItem[] = [
   { to: "/app/dashboard", label: "Student Dashboard", icon: <LayoutDashboard size={18} />, ready: true },
+  { to: "/app/interview-arena", label: "Interview Arena", icon: <Mic2 size={18} />, ready: true },
   { to: "/app/settings", label: "Settings", icon: <SettingsIcon size={18} />, ready: true },
 ];
 

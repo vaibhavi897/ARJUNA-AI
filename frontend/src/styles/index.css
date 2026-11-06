@@ -95,6 +95,54 @@
     @apply border-danger-500 focus:border-danger-500 focus:ring-danger-500/10;
   }
 
+  .focus-slider {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+  }
+
+  .focus-slider::-webkit-slider-runnable-track {
+    height: 8px;
+    border: 1px solid #CBDAD1;
+    border-radius: 9999px;
+    background: #EAF4EC;
+  }
+
+  .focus-slider::-moz-range-track {
+    height: 8px;
+    border: 1px solid #CBDAD1;
+    border-radius: 9999px;
+    background: #EAF4EC;
+  }
+
+  .focus-slider-technical::-webkit-slider-thumb,
+  .focus-slider-behavioural::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+    margin-top: -7px;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 3px solid #FFFFFF;
+    border-radius: 50%;
+    background: #187C4F;
+    box-shadow: 0 0 0 2px #187C4F, 0 2px 5px rgba(7, 37, 27, 0.25);
+  }
+
+  .focus-slider-technical::-moz-range-thumb,
+  .focus-slider-behavioural::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: 3px solid #FFFFFF;
+    border-radius: 50%;
+    background: #187C4F;
+    box-shadow: 0 0 0 2px #187C4F, 0 2px 5px rgba(7, 37, 27, 0.25);
+  }
+
+  .focus-slider:focus-visible {
+    outline: 2px solid #229A63;
+    outline-offset: 4px;
+  }
+
   .link {
     @apply text-brand-600 underline decoration-brand-200 decoration-2 underline-offset-2
       transition-colors hover:text-brand-700 hover:decoration-brand-400;

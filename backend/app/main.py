@@ -41,8 +41,7 @@ app = FastAPI(
     title=f"{settings.APP_NAME} API",
     version="1.0.0",
     description=(
-        "Student-facing career readiness platform. Phase 1 covers authentication, "
-        "onboarding, resume analysis, role-based scoring and the student dashboard."
+        "Student career readiness platform with profile-personalized Interview Arena practice."
     ),
     lifespan=lifespan,
     docs_url="/docs",

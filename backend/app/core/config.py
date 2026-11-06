@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     # --- Optional LLM provider (qualitative analysis). Unset => deterministic only.
     OPENAI_API_KEY: str | None = None
     ANTHROPIC_API_KEY: str | None = None
+    GEMINI_API_KEY: str | None = None
+    GEMINI_MODEL: str = "gemini-2.5-flash"
     LLM_MODEL: str = "claude-opus-5"
 
     # --- Logging ---

@@ -129,3 +129,67 @@ def sync_onet_profiles(db: Session) -> dict[str, int]:
         updated += 1
     db.commit()
     return {"requested": len(careers), "updated": updated}
+
+
+# ---------------------------------------------------------------- world map view
+# Relative professional pay level versus the United States (US = 1.0). A rough, rounded cost-of-living and market
+# heuristic, NOT survey data. Every modelled figure is labelled as an estimate in the API and the UI.
+COUNTRY_FACTORS: dict[str, tuple[str, str, float]] = {
+    # name used by the map -> (ISO code, currency note, factor)
+    "United Kingdom": ("GB", "USD", 0.72), "Germany": ("DE", "USD", 0.70), "Canada": ("CA", "USD", 0.78), "Australia": ("AU", "USD", 0.80),
+    "Singapore": ("SG", "USD", 0.75), "United Arab Emirates": ("AE", "USD", 0.70), "Switzerland": ("CH", "USD", 1.15), "Netherlands": ("NL", "USD", 0.68),
+    "France": ("FR", "USD", 0.62), "Japan": ("JP", "USD", 0.55), "South Korea": ("KR", "USD", 0.55), "China": ("CN", "USD", 0.40),
+    "Brazil": ("BR", "USD", 0.28), "Mexico": ("MX", "USD", 0.25), "South Africa": ("ZA", "USD", 0.27), "Nigeria": ("NG", "USD", 0.12),
+    "Indonesia": ("ID", "USD", 0.17), "Vietnam": ("VN", "USD", 0.15), "Philippines": ("PH", "USD", 0.17), "Saudi Arabia": ("SA", "USD", 0.60),
+    "Israel": ("IL", "USD", 0.75), "Ireland": ("IE", "USD", 0.75), "Sweden": ("SE", "USD", 0.65), "Spain": ("ES", "USD", 0.50),
+    "Italy": ("IT", "USD", 0.50), "Poland": ("PL", "USD", 0.38), "Turkey": ("TR", "USD", 0.25), "Pakistan": ("PK", "USD", 0.10),
+    "Bangladesh": ("BD", "USD", 0.09), "Egypt": ("EG", "USD", 0.10),
+}
+
+
+def _pick(rows: list[CareerSalary], levels: tuple[str, ...]) -> CareerSalary | None:
+    for lv in levels:
+        for r in rows:
+            if r.level == lv and r.amount:
+                return r
+    return None
+
+
+def world_view(db: Session, career: Career) -> dict[str, Any]:
+    """Average pay by country. India and the US use their stored rows in their own currency. Other countries are a
+    modelled estimate: the US figure scaled by a rounded country factor, shown in USD and labelled as an estimate."""
+    rows = list(db.scalars(select(CareerSalary).where(CareerSalary.career_id == career.id)))
+    us = [r for r in rows if r.region == "us"]
+    india = [r for r in rows if r.region == "india"]
+    countries: list[dict[str, Any]] = []
+
+    def levels(rs: list[CareerSalary]) -> dict[str, Any] | None:
+        entry = _pick(rs, ("entry", "p10"))
+        mid = _pick(rs, ("mid", "median"))
+        senior = _pick(rs, ("senior", "p90", "top"))
+        if not (entry or mid or senior):
+            return None
+        g = lambda r: r.amount if r else None  # noqa: E731
+        return {"entry": g(entry), "mid": g(mid), "senior": g(senior)}
+
+    if us:
+        lv = levels(us)
+        if lv:
+            src = us[0]
+            countries.append({"name": "United States of America", "code": "US", "currency": src.currency, "kind": "us_data", "is_estimate": src.source_name.startswith("ARJUNA AI estimate"),
+                              "levels": lv, "source": src.source_name, "source_url": src.source_url})
+    if india:
+        lv = levels(india)
+        if lv:
+            src = india[0]
+            countries.append({"name": "India", "code": "IN", "currency": src.currency, "kind": "india_data", "is_estimate": src.source_name.startswith("ARJUNA AI estimate"),
+                              "levels": lv, "source": src.source_name, "source_url": src.source_url})
+    us_levels = levels(us) if us else None
+    if us_levels:
+        usd = us[0].currency
+        for name, (code, _cur, factor) in COUNTRY_FACTORS.items():
+            countries.append({"name": name, "code": code, "currency": usd, "kind": "modelled", "is_estimate": True, "factor": factor,
+                              "levels": {k: (round(v * factor, -2) if v else None) for k, v in us_levels.items()},
+                              "source": f"ARJUNA AI modelled estimate: the US figure scaled by a rounded country factor ({factor:.2f}x). Not survey data.", "source_url": None})
+    return {"career_id": career.id, "available": bool(countries), "countries": countries,
+            "note": "India and US come from stored benchmarks in their own currency and are never converted into each other. Other countries are rough modelled estimates in US dollars."}

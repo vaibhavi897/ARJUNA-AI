@@ -3,7 +3,7 @@ import { NavLink, Route, Routes } from "react-router-dom";
 import { ArrowUpRight, Bookmark, BriefcaseBusiness, Copy, Linkedin, MapPin, MessageSquareText, Sparkles, Trash2, Users } from "lucide-react";
 import { AppShell } from "../components/layout";
 import { Badge, Button, Card, EmptyState } from "../components/ui";
-import { COMPANIES, DOMAINS, OPPORTUNITIES, PROFESSIONALS, type Opportunity, type Professional } from "../lib/careerConnectData";
+import { COMPANIES, DOMAINS, OPPORTUNITIES, OPPORTUNITY_TYPES, type OpportunityType, PROFESSIONALS, type Opportunity, type Professional } from "../lib/careerConnectData";
 import { request } from "../lib/api";
 import { useToast } from "../lib/auth";
 import { cn } from "../lib/utils";
@@ -57,13 +57,24 @@ function DraftDialog({ person, onClose }: { person: Professional; onClose: () =>
 }
 
 function OpportunityHub({ saved, toggle }: { saved: Saved[]; toggle: (t: Saved["item_type"], id: string) => Promise<void> }) {
-  const [domain, setDomain] = useState(""); const [company, setCompany] = useState("");
-  const filtered = OPPORTUNITIES.filter((x) => (!domain || x.domain === domain) && (!company || x.company === company));
-  return <div className="space-y-5"><div><h2 className="text-2xl font-bold">Opportunity Hub</h2><p className="mt-1 text-sm text-ink-500">Curated starting points from job platforms. Listings are not fetched live.</p></div><FilterBar {...{ domain, setDomain, company, setCompany }} />{filtered.length ? <div className="grid gap-4 md:grid-cols-2">{filtered.map((job) => <OpportunityCard key={job.id} job={job} saved={saved.some((x) => x.item_type === "job" && x.item_id === job.id)} onSave={() => void toggle("job", job.id)} />)}</div> : <EmptyState title="No curated opportunities match" description="Try another domain or clear a filter." />}</div>;
+  const [domain, setDomain] = useState(""); const [company, setCompany] = useState(""); const [type, setType] = useState<OpportunityType | "">("");
+  const inDomain = (x: Opportunity) => !domain || x.domain === domain || x.domain === "All domains";
+  const filtered = OPPORTUNITIES.filter((x) => (!type || x.employmentType === type) && inDomain(x) && (!company || x.company === company));
+  const count = (t: OpportunityType) => OPPORTUNITIES.filter((x) => x.employmentType === t && inDomain(x)).length;
+  const chip = (on: boolean) => cn("rounded-full border px-4 py-2 text-sm font-bold transition", on ? "border-brand-500 bg-brand-600 text-white" : "border-line bg-white text-ink-700 hover:border-brand-300");
+  return <div className="space-y-5">
+    <div><h2 className="text-2xl font-bold">Opportunity Hub</h2><p className="mt-1 text-sm text-ink-500">Choose what you are looking for. These are curated starting points and live search pages on each platform, so dates and details are always current there.</p></div>
+    <div className="flex flex-wrap gap-2" role="tablist" aria-label="Opportunity type">
+      <button role="tab" aria-selected={type === ""} onClick={() => setType("")} className={chip(type === "")}>All</button>
+      {OPPORTUNITY_TYPES.map((t) => <button key={t.value} role="tab" aria-selected={type === t.value} onClick={() => setType(t.value)} className={chip(type === t.value)}>{t.label} <span className={cn("ml-1 text-xs", type === t.value ? "text-white/80" : "text-ink-400")}>{count(t.value)}</span></button>)}
+    </div>
+    <FilterBar {...{ domain, setDomain, company, setCompany }} />
+    {filtered.length ? <div className="grid gap-4 md:grid-cols-2">{filtered.map((job) => <OpportunityCard key={job.id} job={job} saved={saved.some((x) => x.item_type === "job" && x.item_id === job.id)} onSave={() => void toggle("job", job.id)} />)}</div> : <EmptyState title="Nothing matches yet" description="Try another type or domain, or clear a filter." />}
+  </div>;
 }
 
 function OpportunityCard({ job, saved, onSave }: { job: Opportunity; saved: boolean; onSave: () => void }) {
-  return <Card className="flex flex-col gap-4 p-5"><div className="flex items-start justify-between gap-3"><div><Badge tone="forest">{job.domain}</Badge><h3 className="mt-3 text-lg font-bold">{job.title}</h3><p className="mt-1 text-sm text-ink-600">{job.company}</p><p className="mt-2 flex items-center gap-1.5 text-xs text-ink-500"><MapPin size={14} />{job.location} · {job.employmentType}</p></div><button onClick={onSave} className={cn("rounded-xl p-2", saved ? "bg-brand-50 text-brand-700" : "bg-sage-100 text-ink-500")} aria-label={saved ? "Remove saved job" : "Save job"}><Bookmark size={18} fill={saved ? "currentColor" : "none"} /></button></div><div className="mt-auto flex flex-wrap gap-2">{job.sources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-xl bg-forest-800 px-3 py-2 text-xs font-semibold text-white hover:bg-forest-900">{source.kind === "individual listing" ? "Apply / View Job" : "View job search"}<ArrowUpRight size={14} /><span className="sr-only"> at {source.name}</span></a>)}</div><p className="text-[11px] text-ink-400">{job.sources.map((s) => s.name).join(" · ")}</p></Card>;
+  return <Card className="flex flex-col gap-4 p-5"><div className="flex items-start justify-between gap-3"><div><Badge tone="forest">{job.domain}</Badge><h3 className="mt-3 text-lg font-bold">{job.title}</h3><p className="mt-1 text-sm text-ink-600">{job.company}</p><p className="mt-2 flex items-center gap-1.5 text-xs text-ink-500"><MapPin size={14} />{job.location} · {job.employmentType}</p></div><button onClick={onSave} className={cn("rounded-xl p-2", saved ? "bg-brand-50 text-brand-700" : "bg-sage-100 text-ink-500")} aria-label={saved ? "Remove saved job" : "Save job"}><Bookmark size={18} fill={saved ? "currentColor" : "none"} /></button></div><div className="mt-auto flex flex-wrap gap-2">{job.sources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-xl bg-forest-800 px-3 py-2 text-xs font-semibold text-white hover:bg-forest-900">{source.kind === "individual listing" ? "Apply / View Job" : ({ Internship: "Find internships", "Full-time": "View job search", Hackathon: "Browse hackathons", "Case competition": "Browse case competitions", Certification: "View certifications" } as Record<string, string>)[job.employmentType]}<ArrowUpRight size={14} /><span className="sr-only"> at {source.name}</span></a>)}</div><p className="text-[11px] text-ink-400">{job.sources.map((s) => s.name).join(" · ")}</p></Card>;
 }
 
 function ProfessionalConnect({ saved, toggle }: { saved: Saved[]; toggle: (t: Saved["item_type"], id: string) => Promise<void> }) {

@@ -7,6 +7,7 @@ import { AppShell } from "../components/layout";
 import { Badge, Button, Card, EmptyState, ErrorState, InlineNote, LoadingBlock, SectionHeader } from "../components/ui";
 import { Chip, useApi } from "../components/careerverse";
 import { Aurora, CountUp } from "../components/fx";
+import SalaryMap from "../components/SalaryMap";
 import { CompanyExplorer, DemandGauge, FitRadar, SalaryExplorer, SkillMix } from "../components/InsightCharts";
 import { request } from "../lib/api";
 import { cn } from "../lib/utils";
@@ -90,7 +91,7 @@ export default function CareerInsights() {
     cards.forEach((el) => io.observe(el));
     const heads = Array.from(document.querySelectorAll<HTMLElement>("main h2")).filter((h) => h.closest(".card") && !h.querySelector(".cv-gradient-text"));
     heads.forEach((h, i) => { h.id = h.id || `sec-${i}`; (h.closest(".card") as HTMLElement).style.scrollMarginTop = "90px"; });
-    setNav(heads.map((h) => ({ id: h.id, label: (h.textContent ?? "").replace(/Career Fit Score/, "Fit score").replace(/Profession overview/, "Overview").replace(/Salary intelligence/, "Salary").replace(/Company intelligence/, "Companies").replace(/Career trajectory/, "Trajectory").replace(/Skills and qualifications/, "Skills").replace(/Industry outlook/, "Outlook").replace(/Exit opportunities/, "Exits") })));
+    setNav(heads.map((h) => ({ id: h.id, label: (h.textContent ?? "").replace(/How you fit/, "Your fit").replace(/Profession overview/, "Overview").replace(/Salary intelligence/, "Salary").replace(/Company intelligence/, "Companies").replace(/Career trajectory/, "Trajectory").replace(/Skills and qualifications/, "Skills").replace(/Industry outlook/, "Outlook").replace(/Exit opportunities/, "Exits") })));
     const spy = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) setActive(e.target.id); }), { rootMargin: "-20% 0px -70% 0px" });
     heads.forEach((h) => spy.observe(h));
     return () => { io.disconnect(); spy.disconnect(); };
@@ -151,28 +152,14 @@ export default function CareerInsights() {
 
             {/* Career Fit */}
             <Card className="space-y-4 p-6 sm:p-8">
-              <SectionHeader icon={<Target size={18} />} title="Career Fit Score" description="Compares your profile and resume with this role's requirements. An alignment indicator, not a hiring probability." />
+              <SectionHeader icon={<Target size={18} />} title="How you fit" description="Compares your profile and resume with this role's requirements. Not a hiring prediction." />
               {!fit ? (
                 <Button onClick={runFit} loading={fitLoading} icon={<Sparkles size={16} />}>Analyse my fit</Button>
               ) : !fit.profile_ready ? (
                 <InlineNote tone="warn">{fit.message} <Link className="font-semibold underline" to="/app/settings">Update your profile</Link></InlineNote>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex flex-wrap items-center gap-5">
-                    <div className="grid h-24 w-24 place-items-center rounded-full border-8 border-brand-500/80 text-center">
-                      <span className="text-2xl font-extrabold leading-none">{Math.round(fit.score ?? 0)}<span className="block text-[10px] font-semibold text-ink-400">/ 100</span></span>
-                    </div>
-                    <p className="min-w-[240px] flex-1 text-sm text-ink-600">{fit.explanation} <span className="text-xs text-ink-400">({fit.explanation_source === "gemini" ? "explained by Gemini" : "rule-based explanation"})</span></p>
-                  </div>
-                  <FitRadar components={fit.components as any} />
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {Object.entries(fit.components ?? {}).map(([k, v]) => (
-                      <div key={k}>
-                        <div className="flex justify-between text-xs font-medium text-ink-600"><span>{v.label} <span className="text-ink-400">({Math.round(v.weight * 100)}%)</span></span><span>{v.has_data ? `${Math.round(v.value ?? 0)}` : "no data"}</span></div>
-                        <div className="mt-1 h-2 rounded-full bg-sage-200"><div className="h-2 rounded-full bg-brand-500" style={{ width: `${v.has_data ? v.value : 0}%` }} /></div>
-                      </div>
-                    ))}
-                  </div>
+                  <p className="text-sm leading-relaxed text-ink-600">{fit.explanation} <span className="text-xs text-ink-400">({fit.explanation_source === "gemini" ? "explained by Gemini" : "rule-based explanation"})</span></p>
                   <div className="grid gap-4 md:grid-cols-3">
                     {([["Strengths", fit.strengths], ["Gaps", fit.gaps], ["Recommendations", fit.recommendations]] as const).map(([t, list]) => (
                       <div key={t} className="rounded-xl bg-sage-50 p-4"><h4 className="text-sm font-bold text-forest-800">{t}</h4><ul className="mt-1.5 list-disc space-y-1 pl-4 text-sm text-ink-600">{(list ?? []).map((x) => <li key={x}>{x}</li>)}</ul></div>
@@ -215,6 +202,11 @@ export default function CareerInsights() {
                   {c.outlook.us_employment ? <p className="text-xs text-ink-500">US employment: {c.outlook.us_employment.value.toLocaleString("en-US")} jobs ({c.outlook.us_employment.year}, {c.outlook.us_employment.source}).</p> : null}
                 </div>
                 <SalaryExplorer salary={c.salary as any} />
+                <div className="space-y-2 border-t border-line pt-4">
+                  <h4 className="text-lg font-extrabold">Pay around the world</h4>
+                  <p className="text-sm text-ink-500">Click a country on the map, or pick one from the list, to see what this role pays there.</p>
+                  <SalaryMap slug={slug} role={c.title} />
+                </div>
               </div>
               {c.salary.compensation_split.length || c.salary.experience_wise.length || c.salary.location_wise.length ? null : (
                 <p className="text-xs text-ink-500">Experience-wise, location-wise and base-versus-total-compensation breakdowns appear automatically when sourced data is added to the curated benchmark file.</p>

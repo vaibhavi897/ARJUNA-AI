@@ -139,8 +139,8 @@ export default function CareerVerse() {
                   <Link to={`/app/careerverse/${r.slug}/insights`} className="group block rounded-2xl border border-line bg-white p-4 transition hover:-translate-y-1 hover:border-brand-300 hover:shadow-lg">
                     <p className="text-xs font-medium text-ink-500">{r.industry}</p>
                     <p className="mt-0.5 font-bold">{r.title}</p>
-                    <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-sage-200"><div className="cv-grow h-full rounded-full bg-gradient-to-r from-brand-500 to-emerald-300" style={{ width: `${Math.min(100, r.score)}%` }} /></div>
-                    <p className="mt-1.5 flex items-center justify-between text-xs"><span className="font-bold text-brand-700">{Math.round(r.score)}/100 alignment</span><ArrowRight size={14} className="text-ink-300 transition group-hover:translate-x-1 group-hover:text-brand-600" /></p>
+                    {r.matched_skills?.length ? <p className="mt-2 line-clamp-2 text-xs text-ink-500">Matches your {r.matched_skills.slice(0, 3).join(", ")}</p> : null}
+                    <p className="mt-1.5 flex items-center justify-end text-xs"><ArrowRight size={14} className="text-ink-300 transition group-hover:translate-x-1 group-hover:text-brand-600" /></p>
                   </Link>
                 </Reveal>
               ))}
@@ -197,7 +197,7 @@ export default function CareerVerse() {
                       <span className="rounded-full bg-black/30 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur">{c.industry}</span>
                     </div>
                     <div className="absolute right-3 top-3 flex items-center gap-1.5">
-                      {score !== undefined ? <AlignmentRing score={score} /> : null}
+                      
                       <button onClick={() => toggleSave(c)} aria-label={c.is_saved ? "Remove from saved" : "Save profession"} className="grid h-9 w-9 place-items-center rounded-full bg-white/20 text-white backdrop-blur transition hover:scale-110 hover:bg-white/35 active:scale-90">
                         {c.is_saved ? <BookmarkCheck size={17} className="cv-pop" /> : <Bookmark size={17} />}
                       </button>

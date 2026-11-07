@@ -20,7 +20,10 @@
     "@tiptap/pm": "^2.27.3",
     "@tiptap/react": "^2.27.3",
     "@tiptap/starter-kit": "^2.27.3",
+    "@types/d3-geo": "^3.1.1",
+    "@types/topojson-client": "^3.1.5",
     "@xyflow/react": "^12.12.1",
+    "d3-geo": "^3.1.2",
     "echarts": "^6.1.0",
     "echarts-for-react": "^3.0.6",
     "gsap": "^3.15.1",
@@ -31,7 +34,9 @@
     "react-router-dom": "^7.18.5",
     "recharts": "2.13.3",
     "tiptap-markdown": "^0.8.10",
-    "wavesurfer.js": "^8.0.5"
+    "topojson-client": "^3.1.0",
+    "wavesurfer.js": "^8.0.5",
+    "world-atlas": "^2.0.2"
   },
   "devDependencies": {
     "@types/react": "18.3.12",

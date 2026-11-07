@@ -11,10 +11,10 @@ import { QUOTES, Words } from "./suits";
 type Phase = "idle" | "closing" | "quote" | "opening";
 const Ctx = createContext<{ go: (path: string) => void } | null>(null);
 const SHUTTERS = 9;
-const CLOSE_MS = 900;
-const QUOTE_MS = 1150;
+const CLOSE_MS = 1300;
+const QUOTE_MS = 1900;
 const COUNT = 3;
-const OPEN_MS = 1100;
+const OPEN_MS = 1500;
 
 function pickQuotes(): string[] {
   const pool = [...QUOTES].sort(() => Math.random() - 0.5);
@@ -58,7 +58,7 @@ export function CinematicProvider({ children }: { children: ReactNode }) {
           <div className="absolute inset-0 flex">
             {Array.from({ length: SHUTTERS }, (_, i) => (
               <div key={i} className="relative h-full flex-1 overflow-hidden">
-                <div className={`su-shutter ${phase === "opening" ? "su-shutter-open" : "su-shutter-close"}`} style={{ animationDelay: `${(phase === "opening" ? SHUTTERS - 1 - i : i) * 85}ms` }} />
+                <div className={`su-shutter ${phase === "opening" ? "su-shutter-open" : "su-shutter-close"}`} style={{ animationDelay: `${(phase === "opening" ? SHUTTERS - 1 - i : i) * 120}ms` }} />
               </div>
             ))}
           </div>

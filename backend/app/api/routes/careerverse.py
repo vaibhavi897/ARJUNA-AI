@@ -79,6 +79,11 @@ def career_salary(career_ref: str, user: CurrentUser, db: DbSession) -> dict[str
     return career_salary_service.salary_view(db, _career_or_404(db, career_ref))
 
 
+@router.get("/careers/{career_ref}/salary-world")
+def career_salary_world(career_ref: str, user: CurrentUser, db: DbSession) -> dict[str, Any]:
+    return career_salary_service.world_view(db, _career_or_404(db, career_ref))
+
+
 @router.get("/careers/{career_ref}/companies")
 def career_companies(career_ref: str, user: CurrentUser, db: DbSession) -> dict[str, Any]:
     return career_service.companies_view(_career_or_404(db, career_ref))

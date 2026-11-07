@@ -82,6 +82,39 @@ class Settings(BaseSettings):
     SARVAM_BASE_URL: str = "https://api.sarvam.ai"
     # mayura:v1 accepts up to ~1000 characters per call, sarvam-translate:v1 up to ~2000.
     SARVAM_TRANSLATE_MODEL: str = "mayura:v1"
+    # --- Sarvam AI text-to-speech (optional; narration is hidden when unset) ---
+    # bulbul:v2 is deprecated and the provider now rejects it. v3 takes up to
+    # 2500 characters per call; its speakers are shubh, aditya, ritu, ashutosh,
+    # priya, neha, rahul and others. Each model has its own speaker catalogue,
+    # so change the model and the speaker together.
+    SARVAM_TTS_MODEL: str = "bulbul:v3"
+    SARVAM_TTS_SPEAKER: str = "shubh"
+    SARVAM_TTS_PACE: float = 1.0
+
+    # --- Outgoing email (optional; nothing is sent when disabled or unset) ---
+    EMAIL_ALERTS_ENABLED: bool = False
+    SMTP_HOST: str | None = None
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_FROM: str | None = None
+    # Optional copy of every student email, for staff oversight.
+    ALERT_EMAIL_TO: str | None = None
+    WHATSAPP_ENABLED: bool = False
+
+    # --- Supabase Storage (optional; interview recording is hidden when unset) ---
+    # The project is the same one DATABASE_URL points at. The service-role key is
+    # server-side only and must never be sent to the browser.
+    SUPABASE_URL: str | None = None
+    SUPABASE_SERVICE_ROLE_KEY: str | None = None
+    SUPABASE_RECORDINGS_BUCKET: str = "interview-recordings"
+
+    # --- Interview recording ---
+    # A 40-minute capped-bitrate WebM lands around 180 MB; the ceiling leaves room.
+    RECORDING_MAX_MB: int = 400
+    RECORDING_RETENTION_DAYS: int = 30
+    # How long a playback link stays valid once the report asks for one.
+    RECORDING_SIGNED_URL_TTL: int = 3600
 
     # --- CareerVerse: optional external data. Each one is independent; the
     # module works from the seeded dataset when any of them is unset.

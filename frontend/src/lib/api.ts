@@ -43,6 +43,10 @@ type RequestOptions = {
   body?: unknown;
   formData?: FormData;
   signal?: AbortSignal;
+  /** Binary payload sent as-is (recording chunks). Takes precedence over `body`. */
+  rawBody?: BodyInit;
+  /** Content-Type for `rawBody`. */
+  contentType?: string;
 };
 
 /** Fired when the server rejects our token, so the app can sign the user out. */
@@ -54,19 +58,20 @@ export function onUnauthorized(listener: () => void): () => void {
 }
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = "GET", body, formData, signal } = options;
+  const { method = "GET", body, formData, signal, rawBody, contentType: rawContentType } = options;
   const headers: Record<string, string> = { Accept: "application/json" };
 
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
-  if (body !== undefined) headers["Content-Type"] = "application/json";
+  if (rawBody !== undefined) headers["Content-Type"] = rawContentType ?? "application/octet-stream";
+  else if (body !== undefined) headers["Content-Type"] = "application/json";
 
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
       method,
       headers,
-      body: formData ?? (body !== undefined ? JSON.stringify(body) : undefined),
+      body: rawBody ?? formData ?? (body !== undefined ? JSON.stringify(body) : undefined),
       signal,
     });
   } catch (error) {
@@ -106,6 +111,41 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   }
 
   return payload as T;
+}
+
+/**
+ * Same auth and error handling as `request`, but for endpoints that answer with
+ * binary content (narration audio, file downloads) instead of JSON.
+ */
+export async function requestBlob(path: string, options: RequestOptions = {}): Promise<Blob> {
+  const { method = "GET", body, signal } = options;
+  const headers: Record<string, string> = {};
+
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal,
+    });
+  } catch (error) {
+    if ((error as Error)?.name === "AbortError") throw error;
+    throw new ApiError(0, "Could not reach the Arjuna AI server. Check that the backend is running on port 8000.");
+  }
+
+  if (!response.ok) {
+    if (response.status === 401) unauthorizedListeners.forEach((fn) => fn());
+    const payload = await response.json().catch(() => null);
+    const detail = (payload && typeof payload === "object" && (payload as any).detail) || `Request failed (${response.status})`;
+    throw new ApiError(response.status, typeof detail === "string" ? detail : "Request failed");
+  }
+
+  return response.blob();
 }
 
 export const api = {
@@ -180,6 +220,14 @@ export const api = {
   },
   answerInterview: (id: number, answer: string, voice?: Record<string, unknown> | null) => request<InterviewAnswerResult>(`/interviews/${id}/answer`, { method: "POST", body: { answer, ...(voice ? { voice } : {}) } }),
   endInterview: (id: number, integrity_signals: IntegritySignal[]) => request<InterviewSession>(`/interviews/${id}/end`, { method: "POST", body: { integrity_signals } }),
+
+  // ---- interview recording (optional; needs Supabase Storage configured) ----
+  recordingStatus: () => request<{ enabled: boolean; max_mb: number; retention_days: number }>("/interviews/recording/status"),
+  recordingFinalize: (id: number, seconds?: number) =>
+    request<InterviewRecording>(`/interviews/${id}/recording/finalize${seconds ? `?seconds=${Math.round(seconds)}` : ""}`, { method: "POST" }),
+  recordingUrl: (id: number) =>
+    request<InterviewRecording & { url: string; expires_in: number }>(`/interviews/${id}/recording/url`),
+  recordingDelete: (id: number) => request<InterviewRecording>(`/interviews/${id}/recording`, { method: "DELETE" }),
 };
 
 // ---------------------------------------------------------------------------
@@ -697,6 +745,14 @@ export type InterviewSession = {
   transcript: InterviewMessage[];
   integrity_signals: IntegritySignal[];
   consent_media?: boolean;
+  recording?: InterviewRecording;
+};
+export type InterviewRecording = {
+  available: boolean;
+  bytes: number | null;
+  seconds: number | null;
+  mime: string | null;
+  expires_at: string | null;
 };
 export type InterviewAnswerResult = {
   session: InterviewSession;

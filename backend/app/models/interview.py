@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
+from sqlalchemy import BigInteger, Boolean, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -27,4 +27,13 @@ class InterviewSession(Base, TimestampMixin):
     transcript: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
     integrity_signals: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
     report: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+
+    # --- Optional recording. Captured only with consent, held in Supabase
+    # Storage (private bucket) and auto-deleted once it expires. ---
+    recording_path: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    recording_mime: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    recording_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    recording_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    recording_expires_at: Mapped[str | None] = mapped_column(String(40), nullable=True)
+
     user = relationship("User")

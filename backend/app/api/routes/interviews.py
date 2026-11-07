@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -17,6 +17,8 @@ from sqlalchemy.orm import selectinload
 from app.core.config import settings
 from app.models import InterviewSession, Resume, RoleAssessment, User
 from app.modules.auth.dependencies import CurrentUser, DbSession
+from app.modules import interview_email
+from app.modules import interview_recording as rec
 from app.modules import interview_speech
 from app.modules.resume.extract import ALLOWED_EXTENSIONS, ExtractionError, extract_text, sniff_matches_extension
 
@@ -41,7 +43,9 @@ class StartRequest(BaseModel):
     domain: str
     personas: list[str] = Field(min_length=1, max_length=3)
     focus: dict[str, int]
-    consent_media: bool = False
+    # Camera and microphone are required for every interview; the client
+    # must confirm it holds a live stream before a session is created.
+    consent_media: bool = True
     seniority: str = "Mid-Level (4–8 years)"
     job_description: str | None = Field(default=None, max_length=20000)
 
@@ -201,7 +205,7 @@ def history(user: CurrentUser, db: DbSession):
 
 
 def _summary(s: InterviewSession):
-    return {"id": s.id, "domain": s.domain, "status": s.status, "started_at": s.started_at, "ended_at": s.ended_at, "attempted_count": sum(1 for item in s.transcript if item.get("role") == "student"), "report": s.report, "personas": s.personas, "focus": s.focus, "seniority": s.seniority, "has_job_description": bool(s.job_description), "transcript": s.transcript, "integrity_signals": s.integrity_signals}
+    return {"id": s.id, "domain": s.domain, "status": s.status, "started_at": s.started_at, "ended_at": s.ended_at, "attempted_count": sum(1 for item in s.transcript if item.get("role") == "student"), "report": s.report, "personas": s.personas, "focus": s.focus, "seniority": s.seniority, "has_job_description": bool(s.job_description), "transcript": s.transcript, "integrity_signals": s.integrity_signals, "recording": rec.summary(s)}
 
 
 @router.get("/{session_id}")
@@ -211,6 +215,8 @@ def get_session(session_id: int, user: CurrentUser, db: DbSession):
 
 @router.post("")
 async def start_session(body: StartRequest, user: CurrentUser, db: DbSession):
+    if not body.consent_media:
+        raise HTTPException(status_code=422, detail="Interviews require camera and microphone access.")
     session = InterviewSession(user_id=user.id, domain=body.domain, personas=body.personas, focus=body.focus, seniority=body.seniority, job_description=body.job_description.strip() if body.job_description and body.job_description.strip() else None, status="active", consent_media=body.consent_media, started_at=dt.datetime.now(dt.timezone.utc).isoformat(), transcript=[], integrity_signals=[])
     db.add(session)
     db.flush()
@@ -263,7 +269,7 @@ async def answer(session_id: int, body: AnswerRequest, user: CurrentUser, db: Db
 
 
 @router.post("/{session_id}/end")
-async def end_session(session_id: int, body: EndRequest, user: CurrentUser, db: DbSession):
+async def end_session(session_id: int, body: EndRequest, user: CurrentUser, db: DbSession, background: BackgroundTasks):
     session = _owned(db, session_id, user.id)
     if session.status == "completed":
         return _summary(session)
@@ -305,4 +311,68 @@ async def end_session(session_id: int, body: EndRequest, user: CurrentUser, db: 
             else:
                 session.report = {"sufficient_data": False, "message": "The interview was saved, but there is not enough successfully evaluated answer data for a reliable score. Please try again when AI evaluation is available.", "attempted_count": len(attempted), "integrity_signals": session.integrity_signals}
     db.commit()
+    # Emailed out of band so a slow or failing mail server never delays the
+    # report. interview_email swallows its own errors.
+    # Rendered now, while session and user are still attached to this request's
+    # database session; only plain strings cross into the background task.
+    background.add_task(interview_email.deliver, interview_email.prepare(session, user))
     return _summary(session)
+
+
+# ---------------------------------------------------------------- recording
+# Optional. Every endpoint reports cleanly when Supabase Storage is unset, so
+# the Arena simply never offers recording on a server without it.
+
+
+@router.get("/recording/status")
+def recording_status(user: CurrentUser) -> dict[str, Any]:
+    """Whether the Arena may record, and the limits it must respect."""
+    return {
+        "enabled": rec.is_enabled(),
+        "max_mb": settings.RECORDING_MAX_MB,
+        "retention_days": settings.RECORDING_RETENTION_DAYS,
+    }
+
+
+@router.post("/{session_id}/recording/chunk")
+async def recording_chunk(session_id: int, request: Request, user: CurrentUser, db: DbSession) -> dict[str, Any]:
+    """Buffer one recorded piece. The browser posts these every few seconds."""
+    session = _owned(db, session_id, user.id)
+    if not session.consent_media:
+        raise HTTPException(status_code=403, detail="This interview was started without media consent.")
+    if not rec.is_enabled():
+        raise HTTPException(status_code=503, detail="Recording storage is not configured on this server.")
+    data = await request.body()
+    try:
+        size = rec.append_chunk(session, data)
+    except rec.RecordingError as exc:
+        raise HTTPException(status_code=413, detail=str(exc)) from exc
+    return {"buffered_bytes": size}
+
+
+@router.post("/{session_id}/recording/finalize")
+def recording_finalize(session_id: int, user: CurrentUser, db: DbSession, seconds: int | None = None) -> dict[str, Any]:
+    """Upload the buffered recording to storage and attach it to the session."""
+    session = _owned(db, session_id, user.id)
+    try:
+        return rec.finalise(db, session, seconds)
+    except rec.RecordingError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.get("/{session_id}/recording/url")
+def recording_url(session_id: int, user: CurrentUser, db: DbSession) -> dict[str, Any]:
+    """A short-lived link the player can stream from. The bucket stays private."""
+    session = _owned(db, session_id, user.id)
+    try:
+        return {"url": rec.playback_url(session), "expires_in": settings.RECORDING_SIGNED_URL_TTL, **rec.summary(session)}
+    except rec.RecordingError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.delete("/{session_id}/recording")
+def recording_delete(session_id: int, user: CurrentUser, db: DbSession) -> dict[str, Any]:
+    """Let the student remove their own recording before it expires."""
+    session = _owned(db, session_id, user.id)
+    rec.remove(db, session)
+    return {"deleted": True, **rec.summary(session)}

@@ -1,10 +1,11 @@
 import Waveform from "../components/Waveform";
+import { RecordingPlayer } from "../components/RecordingPlayer";
+import { InterviewRecorder, recordingSupported } from "../lib/interviewRecorder";
 import CommunicationReport, { type Communication } from "../components/CommunicationReport";
 import { VoiceMeter } from "../lib/voiceMetrics";
 import CodeEditor from "../components/CodeEditor";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Activity, AlertTriangle, ArrowLeft, Camera, CheckCircle2, Clock3, History, Mic, MicOff, Play, Send, Shield, Square, Volume2, VolumeX } from "lucide-react";
-import { SkillRadar } from "../components/charts";
 import { AppShell } from "../components/layout";
 import { Badge, Button, Card } from "../components/ui";
 import { ApiError, api, type InterviewSession, type InterviewMessage } from "../lib/api";
@@ -38,6 +39,28 @@ const AREA_LABEL: Record<string, string> = {
   case_study: "Technical",
   resume_projects: "Technical",
 };
+/**
+ * Several raw category keys share a display label (technical, case_study and
+ * resume_projects are all "Technical"), which otherwise renders the same label
+ * three times. Group by label and average the scores inside each group.
+ */
+function groupCategories(entries: [string, any][]): { label: string; value: number; parts: string[] }[] {
+  const groups = new Map<string, { values: number[]; parts: string[] }>();
+  for (const [key, raw] of entries) {
+    const label = AREA_LABEL[key] ?? key.replaceAll("_", " ");
+    const value = Number(typeof raw === "object" && raw !== null ? (raw as any).score ?? 0 : raw) || 0;
+    const group = groups.get(label) ?? { values: [], parts: [] };
+    group.values.push(value);
+    group.parts.push(key.replaceAll("_", " "));
+    groups.set(label, group);
+  }
+  return [...groups.entries()].map(([label, g]) => ({
+    label,
+    value: Math.round(g.values.reduce((a, b) => a + b, 0) / g.values.length),
+    parts: g.parts,
+  }));
+}
+
 const FOCUS_COLORS: Record<keyof Focus, string> = {
   technical: "#187C4F",
   behavioural: "#44B47C",
@@ -56,7 +79,8 @@ export default function InterviewArena() {
   const [jobDescription, setJobDescription] = useState("");
   const [uploadingJd, setUploadingJd] = useState(false);
   const [focus, setFocus] = useState<Focus>(DEFAULTS[DOMAINS[0]]);
-  const [consent, setConsent] = useState(false);
+  // Camera and microphone are required for every interview.
+  const consent = true;
   const [session, setSession] = useState<InterviewSession | null>(null);
   const [selectedReport, setSelectedReport] = useState<InterviewSession | null>(null);
   const [answer, setAnswer] = useState("");
@@ -73,6 +97,22 @@ export default function InterviewArena() {
   const [elapsed, setElapsed] = useState(0);
   const [signals, setSignals] = useState<{ type: string; at: string; detail?: string }[]>([]);
   const mediaRef = useRef<MediaStream | null>(null);
+  const recorderRef = useRef<InterviewRecorder | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [canRecord, setCanRecord] = useState(false);
+
+  // Recording is offered only when the server has storage configured and the
+  // browser can actually record. Failure here never blocks the interview.
+  useEffect(() => {
+    let alive = true;
+    api
+      .recordingStatus()
+      .then((d) => alive && setCanRecord(!!d?.enabled && recordingSupported()))
+      .catch(() => alive && setCanRecord(false));
+    return () => {
+      alive = false;
+    };
+  }, []);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const recognitionRef = useRef<any>(null);
   const meter = useRef<VoiceMeter | null>(null);
@@ -152,20 +192,37 @@ export default function InterviewArena() {
     setBusy(true);
     let stream: MediaStream | null = null;
     try {
-      if (consent && navigator.mediaDevices?.getUserMedia) {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setError("This browser cannot access a camera or microphone. Interviews require both.");
+        setBusy(false);
+        return;
+      }
+      {
         try {
           stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
           mediaRef.current = stream;
           setCameraOn(true); setMicOn(true);
           stream.getVideoTracks().forEach((track) => track.addEventListener("ended", () => { setCameraOn(false); addSignal("camera_disconnected", "Camera track disconnected."); }));
           stream.getAudioTracks().forEach((track) => track.addEventListener("ended", () => { setMicOn(false); addSignal("microphone_disconnected", "Microphone track disconnected."); }));
-        } catch { setError("Camera/microphone access was unavailable. You can continue with text and browser speech tools."); }
+        } catch {
+          setError("Camera and microphone access is required. Allow both in your browser, then start the interview again.");
+          setBusy(false);
+          return;
+        }
+      }
+      if (!stream) {
+        setError("Camera and microphone access is required to start an interview.");
+        setBusy(false);
+        return;
       }
       const created = await api.startInterview({ domain, personas, focus, consent_media: consent, seniority, job_description: jobDescription.trim() || null });
       setSignals([]); multipleFacesReported.current = false; setSession(created); setSelectedReport(null); setElapsed(0); setAnswer("");
       if (videoRef.current && stream) videoRef.current.srcObject = stream;
+      if (stream && canRecord) {
+        const recorder = new InterviewRecorder(created.id);
+        if (recorder.start(stream)) { recorderRef.current = recorder; setIsRecording(true); }
+      }
       speak([...created.transcript].reverse().find((m) => m.role === "interviewer")?.text ?? "");
-      if (consent && !stream) addSignal("media_unavailable", "Media permission was granted for integrity signals, but the browser did not provide a stream.");
     } catch (e) { setError(e instanceof ApiError ? e.message : "Could not start interview."); stream?.getTracks().forEach((t) => t.stop()); }
     finally { setBusy(false); }
   };
@@ -199,7 +256,28 @@ export default function InterviewArena() {
     if (!window.confirm("End this interview now? Your attempted responses will be saved and evaluated. Ending early will not be penalized.")) return;
     setBusy(true); setError(null); window.speechSynthesis?.cancel(); recognitionRef.current?.stop?.();
     try {
+      const recorder = recorderRef.current;
+      recorderRef.current = null;
+      setIsRecording(false);
+      let recordedSeconds = 0;
+      let recordedOk = false;
+      if (recorder) {
+        const result = await recorder.stop();
+        recordedOk = result.ok;
+        recordedSeconds = result.seconds;
+      }
+      // Store the recording first, so the report and its email already know
+      // the recording exists. A failure here must not block the report.
+      let saved: Awaited<ReturnType<typeof api.recordingFinalize>> | null = null;
+      if (recordedOk) {
+        try {
+          saved = await api.recordingFinalize(session.id, recordedSeconds);
+        } catch {
+          // the report is the important part; a missing recording is not fatal
+        }
+      }
       const ended = await api.endInterview(session.id, signals);
+      if (saved) ended.recording = saved;
       setSession(ended); setSelectedReport(ended); mediaRef.current?.getTracks().forEach((track) => track.stop()); mediaRef.current = null;
       setCameraOn(false); setMicOn(false); await reloadHistory();
     } catch (e) { setError(e instanceof ApiError ? e.message : "Could not save the interview report."); }
@@ -252,7 +330,7 @@ export default function InterviewArena() {
         <Card className="p-5"><h3 className="font-bold">Live transcript <span className="ml-1 text-xs font-medium text-ink-400">{attempted} attempted response{attempted === 1 ? "" : "s"}</span></h3><div className="mt-3 max-h-[330px] space-y-3 overflow-y-auto">{messages.map((m, i) => <TranscriptTurn key={`${i}-${m.at ?? ""}`} message={m} />)}</div></Card>
       </div>
       <div className="space-y-5">
-        <Card className="overflow-hidden p-0"><div className="flex items-center justify-between border-b border-line px-4 py-3"><h3 className="text-sm font-bold">Interview room</h3><span className="flex gap-2"><span title={cameraOn ? "Camera on" : "Camera off"} className={cameraOn ? "text-brand-600" : "text-ink-300"}><Camera size={17} /></span><span title={micOn ? "Microphone on" : "Microphone off"} className={micOn ? "text-brand-600" : "text-ink-300"}><Mic size={17} /></span></span></div>{cameraOn ? <video ref={(el) => { videoRef.current = el; if (el && mediaRef.current) el.srcObject = mediaRef.current; }} autoPlay muted playsInline className="aspect-video w-full bg-forest-900 object-cover" /> : <div className="grid aspect-video place-items-center bg-sage-50 text-center"><div><Camera size={26} className="mx-auto text-sage-400" /><p className="mt-2 text-xs text-ink-500">Camera is off</p></div></div>}<div className="grid grid-cols-2 gap-2 p-3"><div className="flex items-center gap-2 rounded-lg bg-sage-50 p-2.5 text-xs"><span className={`h-2 w-2 rounded-full ${micOn ? "bg-brand-500" : "bg-ink-300"}`} />Microphone {micOn ? "on" : "off"}</div><div className="flex items-center gap-2 rounded-lg bg-sage-50 p-2.5 text-xs"><span className={`h-2 w-2 rounded-full ${cameraOn ? "bg-brand-500" : "bg-ink-300"}`} />Camera {cameraOn ? "on" : "off"}</div></div></Card>
+        <Card className="overflow-hidden p-0"><div className="flex items-center justify-between border-b border-line px-4 py-3"><h3 className="flex items-center gap-2 text-sm font-bold">Interview room{isRecording ? <span className="inline-flex items-center gap-1.5 rounded-full bg-danger-50 px-2 py-0.5 text-2xs font-bold text-danger-700"><span className="h-1.5 w-1.5 rounded-full bg-danger-500" />Recording</span> : null}</h3><span className="flex gap-2"><span title={cameraOn ? "Camera on" : "Camera off"} className={cameraOn ? "text-brand-600" : "text-ink-300"}><Camera size={17} /></span><span title={micOn ? "Microphone on" : "Microphone off"} className={micOn ? "text-brand-600" : "text-ink-300"}><Mic size={17} /></span></span></div>{cameraOn ? <video ref={(el) => { videoRef.current = el; if (el && mediaRef.current && el.srcObject !== mediaRef.current) el.srcObject = mediaRef.current; }} autoPlay muted playsInline className="aspect-video w-full bg-forest-900 object-cover" /> : <div className="grid aspect-video place-items-center bg-sage-50 text-center"><div><Camera size={26} className="mx-auto text-sage-400" /><p className="mt-2 text-xs text-ink-500">Camera is off</p></div></div>}<div className="grid grid-cols-2 gap-2 p-3"><div className="flex items-center gap-2 rounded-lg bg-sage-50 p-2.5 text-xs"><span className={`h-2 w-2 rounded-full ${micOn ? "bg-brand-500" : "bg-ink-300"}`} />Microphone {micOn ? "on" : "off"}</div><div className="flex items-center gap-2 rounded-lg bg-sage-50 p-2.5 text-xs"><span className={`h-2 w-2 rounded-full ${cameraOn ? "bg-brand-500" : "bg-ink-300"}`} />Camera {cameraOn ? "on" : "off"}</div></div></Card>
         <Card className="p-4"><h3 className="flex items-center gap-2 text-sm font-bold"><Activity size={16} className="text-brand-600" />Interview focus</h3><div className="mt-3 space-y-2.5">{Object.entries(session.focus).map(([key, value]) => <div key={key}><div className="flex justify-between text-xs"><span className="text-ink-600">{AREA_LABEL[key] ?? key}</span><span className="font-semibold tabular-nums">{value}%</span></div><div className="mt-1 h-1.5 overflow-hidden rounded-full bg-sage-100"><div className="h-full rounded-full bg-brand-500" style={{ width: `${value}%` }} /></div></div>)}</div><p className="mt-3 text-2xs text-ink-400">Flexible session · end whenever you’re ready</p></Card>
         {session.consent_media && <Card className="p-4"><h3 className="flex items-center gap-2 text-sm font-bold"><Shield size={16} className="text-brand-600" />Integrity indicators</h3><p className="mt-2 text-xs leading-relaxed text-ink-500">Signals are indicators only, stored separately from performance and not treated as proof of misconduct.</p><p className="mt-2 text-xs font-semibold text-ink-700">{signals.length} signal{signals.length === 1 ? "" : "s"} observed</p></Card>}
       </div>
@@ -276,7 +354,7 @@ export default function InterviewArena() {
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">{AREAS.map(({ key, label }) => <span key={key} className="inline-flex items-center gap-1.5 text-2xs text-ink-500"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: FOCUS_COLORS[key] }} />{label} {focus[key]}%</span>)}</div>
               <div className="mt-4 space-y-4">{AREAS.map(({ key, label }) => <label key={key} className="block rounded-xl border border-line bg-white px-4 py-3"><span className="flex items-center justify-between gap-3 text-sm font-medium text-ink-700"><span>{label}</span><span className="min-w-10 text-right font-semibold tabular-nums text-brand-700">{focus[key]}%</span></span><input aria-label={`${label} focus`} type="range" min={0} max={100} step={1} value={focus[key]} onChange={(e) => updateFocus(key, Number(e.target.value))} className={`focus-slider focus-slider-${key} mt-3 h-5 w-full cursor-pointer`} /></label>)}</div>
               <p className="mt-2 text-xs text-ink-400">Resume and project questions, along with role-specific cases and problem-solving, are included under Technical.</p></section>
-            <section className="rounded-xl border border-line bg-surface-muted p-4"><label className="flex cursor-pointer items-start gap-3"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 h-4 w-4 accent-brand-600" /><span><span className="flex items-center gap-2 text-sm font-semibold text-ink-800"><Shield size={15} className="text-brand-600" />Allow camera/microphone integrity signals</span><span className="mt-1 block text-xs leading-relaxed text-ink-500">Optional and off by default. If enabled, camera/mic disconnection and hidden-tab signals may be recorded. Signals are indicators only, kept separate from your performance report.</span></span></label></section>
+            <section className="rounded-xl border border-brand-200 bg-brand-50/50 p-4"><div className="flex items-start gap-3"><Shield size={16} className="mt-0.5 shrink-0 text-brand-600" /><div><p className="text-sm font-semibold text-ink-800">Camera and microphone are required</p><p className="mt-1 text-xs leading-relaxed text-ink-600">Every interview is conducted with your camera and microphone on, and the session is recorded so you can review it afterwards. {canRecord ? "The recording is stored privately, only you can play it back, and it is deleted automatically after the retention period." : "Recording storage is not configured on this server, so this session will not be saved as a video."} Camera and tab-switch signals are also noted as integrity indicators, kept separate from your performance score.</p><p className="mt-2 text-xs font-medium text-ink-500">Your browser will ask for permission when you start.</p></div></div></section>
             {error && <p role="alert" className="rounded-xl border border-danger-500/25 bg-danger-50 p-3 text-sm text-danger-700">{error}</p>}
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5"><p className="max-w-md text-xs leading-relaxed text-ink-500">Your completed answers will be evaluated. Ending early never lowers your score; very short sessions receive no unreliable score.</p><Button size="lg" icon={<Play size={17} />} loading={busy} onClick={start}>Start interview</Button></div>
           </div>
@@ -297,15 +375,16 @@ function TranscriptTurn({ message }: { message: InterviewMessage }) {
 function ReportView({ item }: { item: InterviewSession }) {
   const report = item.report;
   const attempted = item.transcript.filter((m) => m.role === "student");
-  if (!report?.sufficient_data) return <div className="mx-auto max-w-3xl space-y-5"><Card className="p-6"><div className="flex items-start gap-3"><AlertTriangle className="mt-0.5 text-warn-600" /><div><h2 className="font-bold">Not enough data for a reliable score</h2><p className="mt-2 text-sm leading-relaxed text-ink-600">{report?.message ?? "This interview ended before enough responses were attempted to provide a reliable evaluation."}</p><p className="mt-2 text-xs text-ink-400">{attempted.length} response(s) saved · ending early was not penalized</p></div></div></Card><Card className="p-5"><h3 className="font-bold">Saved transcript</h3><div className="mt-3 space-y-3">{item.transcript.map((m, i) => <TranscriptTurn key={i} message={m} />)}</div></Card><Integrity item={item} /></div>;
+  if (!report?.sufficient_data) return <div className="mx-auto max-w-3xl space-y-5"><Card className="p-6"><div className="flex items-start gap-3"><AlertTriangle className="mt-0.5 text-warn-600" /><div><h2 className="font-bold">Not enough data for a reliable score</h2><p className="mt-2 text-sm leading-relaxed text-ink-600">{report?.message ?? "This interview ended before enough responses were attempted to provide a reliable evaluation."}</p><p className="mt-2 text-xs text-ink-400">{attempted.length} response(s) saved · ending early was not penalized</p></div></div></Card><Card className="p-5"><h3 className="font-bold">Saved transcript</h3><div className="mt-3 space-y-3">{item.transcript.map((m, i) => <TranscriptTurn key={i} message={m} />)}</div></Card><RecordingPlayer sessionId={item.id} recording={item.recording} /><Integrity item={item} /></div>;
   const score = typeof report.overall_score === "number" ? report.overall_score : null;
   const categories = report.category_scores && typeof report.category_scores === "object" ? Object.entries(report.category_scores) : [];
+  const grouped = groupCategories(categories);
   const qFeedback = Array.isArray(report.question_feedback) ? report.question_feedback : attempted.map((m) => ({ question: m.question, answer: m.text, ...m.evaluation }));
   const lists: [string, any[]][] = [["Strengths", report.strengths], ["Areas to improve", report.weaknesses ?? report.improvement_areas], ["Role-specific skill gaps", report.skill_gaps], ["Preparation recommendations", report.preparation_recommendations]];
-  return <div className="space-y-5"><Card className="p-6"><div className="flex flex-wrap items-center gap-6"><div className="grid h-28 w-28 place-items-center rounded-full border-[8px] border-brand-100 bg-brand-50"><div className="text-center"><p className="font-display text-3xl font-extrabold text-forest-800">{score ?? "—"}</p><p className="text-2xs text-ink-500">out of 100</p></div></div><div className="min-w-[200px] flex-1"><Badge tone="brand">{item.domain}</Badge><h2 className="mt-2 text-xl font-bold">Interview performance</h2><p className="mt-1 text-sm text-ink-500">Based on {report.attempted_count ?? attempted.length} attempted response(s). Ending early is not penalized.</p><p className="mt-2 text-xs text-ink-400">{formatDate(item.started_at)} · {item.personas.join(" · ")}</p></div></div>{categories.length >= 3 && <div className="mt-6 rounded-xl border border-line p-3"><p className="text-xs font-bold text-ink-500">Skill profile</p><SkillRadar height={260} data={categories.map(([k, v]) => ({ label: AREA_LABEL[k] ?? k.replaceAll("_", " "), value: Number(typeof v === "object" ? (v as any).score ?? 0 : v) || 0 }))} /></div>}{categories.length > 0 && <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{categories.map(([key, value]) => <div key={key} className="rounded-xl bg-surface-muted p-3"><p className="text-xs text-ink-500">{AREA_LABEL[key] ?? key.replaceAll("_", " ")}</p><p className="mt-1 text-xl font-bold text-ink-900">{typeof value === "object" ? (value as any).score ?? "—" : value}<span className="ml-1 text-xs font-medium text-ink-400">/100</span></p></div>)}</div>}{report.report_note && <p className="mt-4 rounded-lg bg-surface-muted p-3 text-xs leading-relaxed text-ink-500">{report.report_note}</p>}</Card>
+  return <div className="space-y-5"><Card className="p-6"><div className="flex flex-wrap items-center gap-6"><div className="grid h-28 w-28 place-items-center rounded-full border-[8px] border-brand-100 bg-brand-50"><div className="text-center"><p className="font-display text-3xl font-extrabold text-forest-800">{score ?? "—"}</p><p className="text-2xs text-ink-500">out of 100</p></div></div><div className="min-w-[200px] flex-1"><Badge tone="brand">{item.domain}</Badge><h2 className="mt-2 text-xl font-bold">Interview performance</h2><p className="mt-1 text-sm text-ink-500">Based on {report.attempted_count ?? attempted.length} attempted response(s). Ending early is not penalized.</p><p className="mt-2 text-xs text-ink-400">{formatDate(item.started_at)} · {item.personas.join(" · ")}</p></div></div>{grouped.length > 0 && <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{grouped.map((g) => <div key={g.label} className="rounded-xl bg-surface-muted p-3"><p className="text-xs text-ink-500">{g.label}</p><p className="mt-1 text-xl font-bold text-ink-900">{g.value}<span className="ml-1 text-xs font-medium text-ink-400">/100</span></p>{g.parts.length > 1 ? <p className="mt-1 text-2xs leading-4 text-ink-400">Average of {g.parts.join(", ")}</p> : null}</div>)}</div>}{report.report_note && <p className="mt-4 rounded-lg bg-surface-muted p-3 text-xs leading-relaxed text-ink-500">{report.report_note}</p>}</Card>
     <div className="grid gap-5 lg:grid-cols-2">{lists.map(([title, entries]) => <Card key={title} className="p-5"><h3 className="font-bold">{title}</h3>{Array.isArray(entries) && entries.length ? <ul className="mt-3 space-y-2">{entries.map((entry, i) => <li key={i} className="flex gap-2 text-sm leading-relaxed text-ink-600"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />{typeof entry === "string" ? entry : entry.recommendation ?? entry.skill ?? JSON.stringify(entry)}</li>)}</ul> : <p className="mt-2 text-xs text-ink-400">No observations were returned for this area.</p>}</Card>)}</div>
     {(report as any).communication ? <CommunicationReport data={(report as any).communication as Communication} /> : null}
-    <Card className="p-5"><h3 className="font-bold">Question-by-question feedback</h3><div className="mt-4 space-y-3">{qFeedback.map((q: any, i: number) => <details key={i} className="rounded-xl border border-line p-4" open={i === 0}><summary className="cursor-pointer list-none"><span className="mr-2 text-xs font-bold text-brand-700">Q{i + 1}</span><span className="text-sm font-semibold text-ink-800">{q.question ?? "Interview question"}</span>{typeof q.score === "number" && <Badge className="ml-2">{q.score}/100</Badge>}</summary><div className="mt-3 space-y-2 text-sm"><p className="text-xs font-semibold text-ink-500">Your answer</p><p className="whitespace-pre-wrap text-ink-600">{q.answer ?? "No answer text available."}</p>{q.feedback && <p className="leading-relaxed text-ink-700"><b>Feedback:</b> {q.feedback}</p>}{q.strengths?.length > 0 && <p className="text-ink-600"><b>Strengths:</b> {q.strengths.join(" · ")}</p>}{q.improvements?.length > 0 && <p className="text-ink-600"><b>Improve:</b> {q.improvements.join(" · ")}</p>}{q.better_answer && <p className="whitespace-pre-wrap leading-relaxed text-ink-600"><b>Suggested answer:</b> {q.better_answer}</p>}{q.explanation && <p className="leading-relaxed text-ink-600"><b>Why:</b> {q.explanation}</p>}</div></details>)}</div></Card><Integrity item={item} /></div>;
+    <Card className="p-5"><h3 className="font-bold">Question-by-question feedback</h3><div className="mt-4 space-y-3">{qFeedback.map((q: any, i: number) => <details key={i} className="rounded-xl border border-line p-4" open={i === 0}><summary className="cursor-pointer list-none"><span className="mr-2 text-xs font-bold text-brand-700">Q{i + 1}</span><span className="text-sm font-semibold text-ink-800">{q.question ?? "Interview question"}</span>{typeof q.score === "number" && <Badge className="ml-2">{q.score}/100</Badge>}</summary><div className="mt-3 space-y-2 text-sm"><p className="text-xs font-semibold text-ink-500">Your answer</p><p className="whitespace-pre-wrap text-ink-600">{q.answer ?? "No answer text available."}</p>{q.feedback && <p className="leading-relaxed text-ink-700"><b>Feedback:</b> {q.feedback}</p>}{q.strengths?.length > 0 && <p className="text-ink-600"><b>Strengths:</b> {q.strengths.join(" · ")}</p>}{q.improvements?.length > 0 && <p className="text-ink-600"><b>Improve:</b> {q.improvements.join(" · ")}</p>}{q.better_answer && <p className="whitespace-pre-wrap leading-relaxed text-ink-600"><b>Suggested answer:</b> {q.better_answer}</p>}{q.explanation && <p className="leading-relaxed text-ink-600"><b>Why:</b> {q.explanation}</p>}</div></details>)}</div></Card><RecordingPlayer sessionId={item.id} recording={item.recording} /><Integrity item={item} /></div>;
 }
 
 function Integrity({ item }: { item: InterviewSession }) {

@@ -7,6 +7,8 @@ import { Button, EmptyState, ErrorState, LoadingBlock } from "../components/ui";
 import { Chip, SceneArt, useApi } from "../components/careerverse";
 import { SceneAnimation, ROLES, seedOf } from "../components/SceneAnimation";
 import { Aurora, useTypewriter } from "../components/fx";
+import ConsultingStory from "../components/ConsultingStory";
+import { CONSULTING_PROFILE } from "../lib/consultingStoryData";
 import { request } from "../lib/api";
 import { cn } from "../lib/utils";
 
@@ -46,8 +48,17 @@ function skyFor(h: number): { overlay: string; label: string; icon: React.ReactN
   return { overlay: "linear-gradient(180deg, rgba(8,12,50,.62), rgba(20,20,80,.25) 70%, transparent)", label: "Night", icon: <Moon size={14} /> };
 }
 
+/**
+ * Route entry. Professions with a hand-built, image-led story get their own
+ * experience; every other profession uses the shared player below.
+ */
 export default function CareerStory() {
   const { slug = "" } = useParams();
+  if (slug === CONSULTING_PROFILE.slug) return <ConsultingStory />;
+  return <GenericCareerStory slug={slug} />;
+}
+
+function GenericCareerStory({ slug }: { slug: string }) {
   const overview = useApi<Overview>(`/career-stories/${slug}`);
   const [n, setN] = useState<number | null>(null);
   const [scene, setScene] = useState<Scene | null>(null);

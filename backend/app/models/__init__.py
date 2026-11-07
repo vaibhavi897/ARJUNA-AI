@@ -41,6 +41,7 @@ from app.models.careerverse import (
     UserCareerView,
 )
 from app.models.career_connect import CareerConnectSavedItem
+from app.models.translation import TranslationCache
 from app.models.learning import (
     GeneratedMaterial,
     LearningEvent,
@@ -117,6 +118,7 @@ __all__ = [
     "Career",
     "CareerAiOutput",
     "CareerConnectSavedItem",
+    "TranslationCache",
     "CareerCompany",
     "CareerDomain",
     "CareerExit",

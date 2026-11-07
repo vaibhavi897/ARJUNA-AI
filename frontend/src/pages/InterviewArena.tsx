@@ -1,4 +1,6 @@
 import Waveform from "../components/Waveform";
+import CommunicationReport, { type Communication } from "../components/CommunicationReport";
+import { VoiceMeter } from "../lib/voiceMetrics";
 import CodeEditor from "../components/CodeEditor";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Activity, AlertTriangle, ArrowLeft, Camera, CheckCircle2, Clock3, History, Mic, MicOff, Play, Send, Shield, Square, Volume2, VolumeX } from "lucide-react";
@@ -73,6 +75,8 @@ export default function InterviewArena() {
   const mediaRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const recognitionRef = useRef<any>(null);
+  const meter = useRef<VoiceMeter | null>(null);
+  if (!meter.current) meter.current = new VoiceMeter();
   const multipleFacesReported = useRef(false);
 
   const reloadHistory = useCallback(async () => {
@@ -181,7 +185,9 @@ export default function InterviewArena() {
     if (!session || !answer.trim()) return;
     setBusy(true); setError(null);
     try {
-      const result = await api.answerInterview(session.id, answer.trim());
+      const voice = meter.current?.snapshot() ?? null;
+      const result = await api.answerInterview(session.id, answer.trim(), voice);
+      meter.current?.reset();
       setSession(result.session); setAnswer(""); setError(result.message ?? (result.closing && result.session.transcript.at(-1)?.role === "student" ? "Your answer was saved, but no next question came back. End the interview to review your saved responses." : null));
       if (result.session.status === "active" && result.session.transcript.at(-1)?.role === "interviewer") speak(result.session.transcript.at(-1)?.text ?? "");
     } catch (e) { setError(e instanceof ApiError ? e.message : "Could not submit your response."); }
@@ -203,16 +209,16 @@ export default function InterviewArena() {
   const toggleListening = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) { setError("Speech recognition is not supported in this browser. You can type your response instead."); return; }
-    if (listening) { recognitionRef.current?.stop?.(); setListening(false); return; }
+    if (listening) { recognitionRef.current?.stop?.(); meter.current?.pause(); setListening(false); return; }
     const recognition = new SpeechRecognition(); recognition.lang = "en-US"; recognition.continuous = true; recognition.interimResults = true;
     recognition.onresult = (event: any) => {
       let finalText = ""; let interim = "";
       for (let i = event.resultIndex; i < event.results.length; i++) (event.results[i].isFinal ? finalText += event.results[i][0].transcript + " " : interim += event.results[i][0].transcript);
-      if (finalText) setAnswer((old) => `${old}${old ? " " : ""}${finalText.trim()}`);
+      if (finalText) { meter.current?.addWords(finalText); setAnswer((old) => `${old}${old ? " " : ""}${finalText.trim()}`); }
       if (interim) setListening(true);
     };
-    recognition.onerror = () => setListening(false); recognition.onend = () => setListening(false);
-    recognitionRef.current = recognition; recognition.start(); setListening(true); setMicOn(true);
+    recognition.onerror = () => { meter.current?.pause(); setListening(false); }; recognition.onend = () => { meter.current?.pause(); setListening(false); };
+    recognitionRef.current = recognition; recognition.start(); void meter.current?.start(); setListening(true); setMicOn(true);
   };
 
   const showSession = (item: InterviewSession) => {
@@ -298,6 +304,7 @@ function ReportView({ item }: { item: InterviewSession }) {
   const lists: [string, any[]][] = [["Strengths", report.strengths], ["Areas to improve", report.weaknesses ?? report.improvement_areas], ["Role-specific skill gaps", report.skill_gaps], ["Preparation recommendations", report.preparation_recommendations]];
   return <div className="space-y-5"><Card className="p-6"><div className="flex flex-wrap items-center gap-6"><div className="grid h-28 w-28 place-items-center rounded-full border-[8px] border-brand-100 bg-brand-50"><div className="text-center"><p className="font-display text-3xl font-extrabold text-forest-800">{score ?? "—"}</p><p className="text-2xs text-ink-500">out of 100</p></div></div><div className="min-w-[200px] flex-1"><Badge tone="brand">{item.domain}</Badge><h2 className="mt-2 text-xl font-bold">Interview performance</h2><p className="mt-1 text-sm text-ink-500">Based on {report.attempted_count ?? attempted.length} attempted response(s). Ending early is not penalized.</p><p className="mt-2 text-xs text-ink-400">{formatDate(item.started_at)} · {item.personas.join(" · ")}</p></div></div>{categories.length >= 3 && <div className="mt-6 rounded-xl border border-line p-3"><p className="text-xs font-bold text-ink-500">Skill profile</p><SkillRadar height={260} data={categories.map(([k, v]) => ({ label: AREA_LABEL[k] ?? k.replaceAll("_", " "), value: Number(typeof v === "object" ? (v as any).score ?? 0 : v) || 0 }))} /></div>}{categories.length > 0 && <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{categories.map(([key, value]) => <div key={key} className="rounded-xl bg-surface-muted p-3"><p className="text-xs text-ink-500">{AREA_LABEL[key] ?? key.replaceAll("_", " ")}</p><p className="mt-1 text-xl font-bold text-ink-900">{typeof value === "object" ? (value as any).score ?? "—" : value}<span className="ml-1 text-xs font-medium text-ink-400">/100</span></p></div>)}</div>}{report.report_note && <p className="mt-4 rounded-lg bg-surface-muted p-3 text-xs leading-relaxed text-ink-500">{report.report_note}</p>}</Card>
     <div className="grid gap-5 lg:grid-cols-2">{lists.map(([title, entries]) => <Card key={title} className="p-5"><h3 className="font-bold">{title}</h3>{Array.isArray(entries) && entries.length ? <ul className="mt-3 space-y-2">{entries.map((entry, i) => <li key={i} className="flex gap-2 text-sm leading-relaxed text-ink-600"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />{typeof entry === "string" ? entry : entry.recommendation ?? entry.skill ?? JSON.stringify(entry)}</li>)}</ul> : <p className="mt-2 text-xs text-ink-400">No observations were returned for this area.</p>}</Card>)}</div>
+    {(report as any).communication ? <CommunicationReport data={(report as any).communication as Communication} /> : null}
     <Card className="p-5"><h3 className="font-bold">Question-by-question feedback</h3><div className="mt-4 space-y-3">{qFeedback.map((q: any, i: number) => <details key={i} className="rounded-xl border border-line p-4" open={i === 0}><summary className="cursor-pointer list-none"><span className="mr-2 text-xs font-bold text-brand-700">Q{i + 1}</span><span className="text-sm font-semibold text-ink-800">{q.question ?? "Interview question"}</span>{typeof q.score === "number" && <Badge className="ml-2">{q.score}/100</Badge>}</summary><div className="mt-3 space-y-2 text-sm"><p className="text-xs font-semibold text-ink-500">Your answer</p><p className="whitespace-pre-wrap text-ink-600">{q.answer ?? "No answer text available."}</p>{q.feedback && <p className="leading-relaxed text-ink-700"><b>Feedback:</b> {q.feedback}</p>}{q.strengths?.length > 0 && <p className="text-ink-600"><b>Strengths:</b> {q.strengths.join(" · ")}</p>}{q.improvements?.length > 0 && <p className="text-ink-600"><b>Improve:</b> {q.improvements.join(" · ")}</p>}{q.better_answer && <p className="whitespace-pre-wrap leading-relaxed text-ink-600"><b>Suggested answer:</b> {q.better_answer}</p>}{q.explanation && <p className="leading-relaxed text-ink-600"><b>Why:</b> {q.explanation}</p>}</div></details>)}</div></Card><Integrity item={item} /></div>;
 }
 

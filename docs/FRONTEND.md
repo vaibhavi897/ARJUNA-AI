@@ -71,3 +71,10 @@ Which screen uses which frontend feature or library. Code lives in `frontend/src
 - After installing new packages, restart the dev server with `npm run dev -- --force`.
 - Heavy libraries (Monaco, ECharts) load on demand. Monaco fetches its files from a CDN, so it needs internet.
 - Shared building blocks: `components/ui.tsx` (buttons, cards, modal, fields), `components/fx.tsx` (animations, counters).
+
+## Language support (Sarvam AI)
+- A language picker sits in the top bar of every signed-in page (Hindi, Marathi, Gujarati, Bengali, Tamil, Telugu, Kannada, Malayalam, Punjabi, Odia and English).
+- `lib/i18n.tsx` translates every visible piece of text, including AI-written content, through `POST /api/translate`. It never touches typed input, code editors or code blocks, and switching back to English restores the original text exactly.
+- Each distinct string is translated once and cached in the browser and in the `translation_cache` table, so repeat views are instant and cost nothing.
+- The key lives only in `backend/.env` as `SARVAM_API_KEY` (model: `SARVAM_TRANSLATE_MODEL`, default `mayura:v1`). Without it the picker reports that translation is not configured and the site stays in English.
+- Teammates need `python -m alembic upgrade head` once for the cache table.

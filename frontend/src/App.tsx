@@ -2,6 +2,7 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AuthProvider, ToastProvider, useAuth } from "./lib/auth";
 import { CinematicProvider } from "./components/Cinematic";
+import { LanguageProvider } from "./lib/i18n";
 import { PageLoader, Toaster } from "./components/ui";
 import Landing from "./pages/Landing";
 import { Login, Register } from "./pages/Auth";
@@ -73,6 +74,7 @@ export default function App() {
   return (
     <ToastProvider>
       <AuthProvider>
+        <LanguageProvider>
         <CinematicProvider>
         <Routes>
           {/* Login is the app's startup screen. Keep the public landing page at
@@ -177,6 +179,7 @@ export default function App() {
         </Routes>
         <Toaster />
         </CinematicProvider>
+        </LanguageProvider>
       </AuthProvider>
     </ToastProvider>
   );

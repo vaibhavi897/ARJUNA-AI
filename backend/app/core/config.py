@@ -77,6 +77,12 @@ class Settings(BaseSettings):
     # Comma-separated models tried in order when the primary is overloaded or missing.
     GEMINI_FALLBACK_MODELS: str = "gemini-3.1-flash-lite,gemini-flash-latest,gemini-2.5-flash-lite"
 
+    # --- Sarvam AI translation (server-side only; the browser never sees the key) ---
+    SARVAM_API_KEY: str | None = None
+    SARVAM_BASE_URL: str = "https://api.sarvam.ai"
+    # mayura:v1 accepts up to ~1000 characters per call, sarvam-translate:v1 up to ~2000.
+    SARVAM_TRANSLATE_MODEL: str = "mayura:v1"
+
     # --- CareerVerse: optional external data. Each one is independent; the
     # module works from the seeded dataset when any of them is unset.
     ONET_USERNAME: str | None = None

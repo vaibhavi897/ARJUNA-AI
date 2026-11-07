@@ -17,6 +17,7 @@ from sqlalchemy.orm import selectinload
 from app.core.config import settings
 from app.models import InterviewSession, Resume, RoleAssessment, User
 from app.modules.auth.dependencies import CurrentUser, DbSession
+from app.modules import interview_speech
 from app.modules.resume.extract import ALLOWED_EXTENSIONS, ExtractionError, extract_text, sniff_matches_extension
 
 router = APIRouter(prefix="/interviews", tags=["interviews"])
@@ -84,8 +85,20 @@ async def extract_job_description(
     return {"text": extracted[:20000]}
 
 
+class VoiceMetrics(BaseModel):
+    """Browser-side measurements for an answer the candidate dictated. Bounded so a client cannot send junk."""
+    spoken: bool = True
+    words: int = Field(default=0, ge=0, le=5000)
+    spoken_seconds: float = Field(default=0, ge=0, le=3600)
+    total_seconds: float = Field(default=0, ge=0, le=3600)
+    long_pauses: int = Field(default=0, ge=0, le=200)
+    volume_mean: float | None = Field(default=None, ge=0, le=1)
+    volume_cv: float | None = Field(default=None, ge=0, le=20)
+
+
 class AnswerRequest(BaseModel):
     answer: str = Field(max_length=12000)
+    voice: VoiceMetrics | None = None
 
 
 class EndRequest(BaseModel):
@@ -227,7 +240,8 @@ async def answer(session_id: int, body: AnswerRequest, user: CurrentUser, db: Db
         raise HTTPException(status_code=409, detail="No active question is available.")
     if session.transcript and session.transcript[-1].get("role") == "student":
         raise HTTPException(status_code=409, detail="Your answer was saved. End the interview if a new question is unavailable.")
-    session.transcript = [*session.transcript, {"role": "student", "text": body.answer.strip(), "question": current["text"], "category": current.get("category"), "at": dt.datetime.now(dt.timezone.utc).isoformat()}]
+    session.transcript = [*session.transcript, {"role": "student", "text": body.answer.strip(), "question": current["text"], "category": current.get("category"), "at": dt.datetime.now(dt.timezone.utc).isoformat(),
+                                             **({"voice": body.voice.model_dump()} if body.voice and body.voice.spoken else {})}]
     # Persist the attempted response before calling Gemini. If the model is
     # temporarily unavailable, the response remains available to End Interview.
     db.commit()
@@ -265,6 +279,7 @@ async def end_session(session_id: int, body: EndRequest, user: CurrentUser, db: 
             report = {**generated, "sufficient_data": True, "attempted_count": len(attempted), "integrity_signals": session.integrity_signals}
             if not isinstance(report.get("question_feedback"), list):
                 report["question_feedback"] = [{"question": a.get("question"), "answer": a.get("text"), **(a.get("evaluation") or {})} for a in attempted]
+            report["communication"] = interview_speech.analyse(attempted)
             session.report = report
         except HTTPException as exc:
             # Ending is always honored and the session/transcript remains saved.
@@ -285,6 +300,7 @@ async def end_session(session_id: int, body: EndRequest, user: CurrentUser, db: 
                     "question_feedback": [{"question": a.get("question"), "answer": a.get("text"), **a.get("evaluation", {})} for a in evaluated],
                     "report_note": "Detailed recommendations could not be generated. Scores use only Gemini evaluations already saved for attempted answers.",
                     "attempted_count": len(attempted), "integrity_signals": session.integrity_signals,
+                    "communication": interview_speech.analyse(attempted),
                 }
             else:
                 session.report = {"sufficient_data": False, "message": "The interview was saved, but there is not enough successfully evaluated answer data for a reliable score. Please try again when AI evaluation is available.", "attempted_count": len(attempted), "integrity_signals": session.integrity_signals}

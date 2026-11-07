@@ -1,6 +1,7 @@
 /** App shell, sidebar, top bar and public navigation. */
 import { motion } from "motion/react";
 import Assistant from "./Assistant";
+import LanguageSwitcher from "./LanguageSwitcher";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -281,7 +282,7 @@ export function AppShell({
                 <p className="truncate text-xs text-ink-500 sm:text-sm">{subtitle}</p>
               ) : null}
             </div>
-            {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+            <div className="flex shrink-0 items-center gap-2"><LanguageSwitcher />{actions}</div>
           </div>
         </header>
 

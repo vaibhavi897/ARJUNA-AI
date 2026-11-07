@@ -178,7 +178,7 @@ export const api = {
     formData.append("file", file);
     return request<{ text: string }>("/interviews/job-description", { method: "POST", formData });
   },
-  answerInterview: (id: number, answer: string) => request<InterviewAnswerResult>(`/interviews/${id}/answer`, { method: "POST", body: { answer } }),
+  answerInterview: (id: number, answer: string, voice?: Record<string, unknown> | null) => request<InterviewAnswerResult>(`/interviews/${id}/answer`, { method: "POST", body: { answer, ...(voice ? { voice } : {}) } }),
   endInterview: (id: number, integrity_signals: IntegritySignal[]) => request<InterviewSession>(`/interviews/${id}/end`, { method: "POST", body: { integrity_signals } }),
 };
 

@@ -12,6 +12,8 @@ venv/
 .env
 .env.local
 .env.*.local
+.env.bak*
+*/.env.bak*
 !.env.example
 
 # Uploaded student resumes (keep the folder, drop the contents)

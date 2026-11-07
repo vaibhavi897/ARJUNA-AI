@@ -1,0 +1,503 @@
+--- PAGE 1 ---\nArjuna | Hackathons and Competitions | Prepared 7 Nov 2026
+Page 1
+Hackathons & Competitions
+A resource directory for students, developers and innovators | Arjuna
+Read the eligibility before you register. Not every competition is open to everyone. Each entry states who can take part, and some are restricted by student status, institution, age, country
+or profession. One entry (Google Cloud AI Builder Cup) is included precisely because it excludes students.
+How accurate is this? Entries with full eligibility details (NASA Space Apps, Smart India Hackathon, Google Solution Challenge India, Flipkart GRiD, HackWithInfy, Google Cloud AI Builder
+Cup, ICPC and Bharatiya Antariksh Hackathon) were researched in November 2026 from the organisers' pages and third-party reports. Entries marked 'Not checked this session' are
+well-known recurring competitions whose rules were not reviewed; confirm them on the official site. Where a field could not be found, the entry says so instead of guessing. Dates are as
+reported on 7 Nov 2026 and can change.
+Closed does not mean over. Most entries recur every year. Where registration is closed, the entry says so; follow the official link to catch the next edition.
+\n--- PAGE 2 ---\nArjuna | Hackathons and Competitions | Prepared 7 Nov 2026
+Page 2
+Contents
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 3
+1. Open Hackathons
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 4
+2. Student-Specific Hackathons
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 6
+3. Company-Sponsored Hackathons
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 8
+4. AI, Machine Learning & Data Science
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 8
+5. Software Development & Coding Competitions
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 10
+6. Innovation, Entrepreneurship & Startup Competitions
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 10
+7. Research & Domain-Specific Competitions
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 11
+8. Large-Scale National & International Competitions
+\n--- PAGE 3 ---\nArjuna | Hackathons and Competitions | Prepared 7 Nov 2026
+Page 3
+1. Open Hackathons
+Open to a broad range of participants. Rules still differ by event, so read each one.
+NASA International Space Apps Challenge
+Organising organisation
+NASA, with international space-agency partners
+Official link
+www.spaceappschallenge.org/
+Category
+Open hackathon (global)
+Eligibility
+Open to people of all ages, skill levels and professional backgrounds. US citizenship is not required.
+Academic requirements
+None required. Students, developers, scientists, designers and others can join.
+Team requirements
+Individual or team. A third-party listing reports 1-6 members; confirm in the official participant FAQ.
+Geographical restrictions
+Global. Local events in many countries plus a virtual event.
+Participation mode
+Hybrid (in-person local events and virtual)
+Themes / domains
+Earth and space challenges using NASA and partner-agency open data. 2026 theme: The Next Frontier.
+Rewards / prizes
+Global Awards and participant certificates. Cash amounts: Not specified in the sources found.
+Important requirements
+Create an account on the official site, choose a challenge, submit a project. Participation is free; do not pay anyone claiming to be an organiser.
+Registration timing (as of 7
+Nov 2026)
+2026 event: 14-15 Nov 2026. NASA Science reports registration open. Recurring every year.
+Devpost Hackathons
+Organising organisation
+Devpost (platform)
+Official link
+devpost.com/hackathons
+Category
+Open hackathon listing
+What it is
+Online listing of hackathons from many organisers worldwide. Eligibility is set by each hackathon.
+Eligibility and rules
+Not checked this session. Rules differ each edition; confirm eligibility, team size, geography and prizes on the official site before registering.
+Devfolio Hackathons
+Organising organisation
+Devfolio (platform)
+Official link
+devfolio.co/hackathons
+Category
+Open hackathon listing
+What it is
+Hackathon listing and registration platform widely used in India. Eligibility is set by each hackathon.
+Eligibility and rules
+Not checked this session. Rules differ each edition; confirm eligibility, team size, geography and prizes on the official site before registering.
+\n--- PAGE 4 ---\nArjuna | Hackathons and Competitions | Prepared 7 Nov 2026
+Page 4
+ETHGlobal
+Organising organisation
+ETHGlobal
+Official link
+ethglobal.com/events
+Category
+Open hackathon (Web3)
+What it is
+Web3 and Ethereum hackathons, online and in-person.
+Eligibility and rules
+Not checked this session. Rules differ each edition; confirm eligibility, team size, geography and prizes on the official site before registering.
+2. Student-Specific Hackathons
+For college, undergraduate, postgraduate and university-team participants.
+Smart India Hackathon (SIH)
+Organising organisation
+Ministry of Education's Innovation Cell and AICTE
+Official link
+www.sih.gov.in/
+Category
+Student-specific; large-scale national (India)
+Eligibility
+Students enrolled in recognised higher-education institutions in India (engineering, management, pharmacy, architecture, design and other recognised programmes), as summarised from
+the official guidelines by third-party sources.
+Academic requirements
+Current students. Teams must be nominated by their institution after an internal hackathon, through a registered college coordinator (SPOC).
+Team requirements
+Exactly 6 students from the same institution, including at least 1 female member. 1-2 mentors allowed.
+Geographical restrictions
+India only.
+Participation mode
+Grand Finale offline at nodal centres across India. Internal rounds online or offline, set by each institution.
+Themes / domains
+Software and hardware problem statements from ministries, PSUs and industry (for example disaster management, water, emerging technologies).
+Rewards / prizes
+Not verified. Check sih.gov.in.
+Important requirements
+Idea submission through the SIH portal; the institution must register on the portal first. Individuals cannot enter directly.
+Registration timing (as of 7
+Nov 2026)
+2026: nomination and idea submission closed 9 Oct 2026 (extended from 30 Sep); Grand Finale proposed for Dec 2026. Recurring annually.
+\n--- PAGE 5 ---\nArjuna | Hackathons and Competitions | Prepared 7 Nov 2026
+Page 5
+Google Solution Challenge - India edition
+Organising organisation
+Google Developer Groups on Campus (Google Developers), run in India with Hack2Skill
+Official link
+vision.hack2skill.com/
+Category
+Student-specific; large-scale national (India)
+Eligibility
+Participants must be 18 or older and enrolled in a college or university in India.
+Academic requirements
+Students of any level, beginner to advanced.
+Team requirements
+1-4 members. One participant can join only one team; one team submits one project.
+Geographical restrictions
+India for this edition.
+Participation mode
+Online prototype submission; later stages reported as mentoring and a final pitch.
+Themes / domains
+Build with AI to solve real-world problems using Google technologies (Gemini, Google Cloud, Flutter, Firebase).
+Rewards / prizes
+Community pages report INR 4,00,000 / 3,00,000 / 2,00,000 for the top three. Confirm officially.
+Important requirements
+Register individually, then form a team. Submit a working prototype with a problem statement, solution brief, demo video and code link. At least one Google technology must be used.
+Free. The link shown is the host platform; Google's own programme page was not opened.
+Registration timing (as of 7
+Nov 2026)
+2026 registration window ran about March to April 2026 and is closed. Recurring annually.
+Major League Hacking (MLH)
+Organising organisation
+Major League Hacking
+Official link
+mlh.io/
+Category
+Student hackathon league
+What it is
+Official student hackathon league with events worldwide. Each event has its own rules.
+Eligibility and rules
+Not checked this session. Rules differ each edition; confirm eligibility, team size, geography and prizes on the official site before registering.
+IEEEXtreme
+Organising organisation
+IEEE
+Official link
+ieeextreme.org/
+Category
+Student programming competition
+What it is
+Global 24-hour programming competition run by IEEE for students.
+Eligibility and rules
+Not checked this session. Rules differ each edition; confirm eligibility, team size, geography and prizes on the official site before registering.
+\n--- PAGE 6 ---\nArjuna | Hackathons and Competitions | Prepared 7 Nov 2026
+Page 6
+HackMIT
+Organising organisation
+MIT students
+Official link
+hackmit.org/
+Category
+University-organised hackathon
+What it is
+Annual hackathon hosted by MIT. Watch the site for future editions.
+Eligibility and rules
+Not checked this session. Rules differ each edition; confirm eligibility, team size, geography and prizes on the official site before registering.
+Hack the North
+Organising organisation
+University of Waterloo students
+Official link
+hackthenorth.com/
+Category
+University-organised hackathon
+What it is
+Annual hackathon hosted at the University of Waterloo. Watch the site for future editions.
+Eligibility and rules
+Not checked this session. Rules differ each edition; confirm eligibility, team size, geography and prizes on the official site before registering.
+3. Company-Sponsored Hackathons
+Organised or sponsored by major technology companies.
+Flipkart GRiD
+Organising organisation
+Flipkart
+Official link
+www.flipkartcareers.com/
+Category
+Company-sponsored; large-scale national (India)
+Eligibility
+Engineering students enrolled in recognised institutions in India.
+Academic requirements
+B.Tech, B.E., M.Tech, M.E., M.S., PhD, or dual/integrated engineering degrees. Eligible graduation batches are set per edition (GRiD 6.0 allowed 2025-2028); confirm for the next edition.
+Team requirements
+Not verified for GRiD 8.0. GRiD 6.0 allowed teams of 1-3.
+Geographical restrictions
+India (engineering colleges across the country).
+Participation mode
+Online rounds (screening, 90-minute coding test, case-study code), then National Finals. Finals format: Not verified.
+Themes / domains
+GRiD 8.0 tracks: Software Development, AI Engineering, Data Science.
+Rewards / prizes
+Internship and SDE-1 interview opportunities and certificates. Cash prizes: Not verified.
+Important requirements
+Free. Register only through Flipkart's official early-careers portal; GRiD 8.0 reportedly did not run on Unstop. The link shown is Flipkart's careers site.
+Registration timing (as of 7
+Nov 2026)
+GRiD 8.0 registration ran from 19 June 2026; sources differ on the closing date (7 or 12 July). Next edition expected around June 2027 (third-party).
+\n--- PAGE 7 ---\nArjuna | Hackathons and Competitions | Prepared 7 Nov 2026
+Page 7
+HackWithInfy
+Organising organisation
+Infosys
+Official link
+www.infosys.com/careers/hackwithinfy.html
+Category
+Company-sponsored; large-scale national (India)
+Eligibility
+Engineering students graduating in the edition's target year (2027 for the 2026 edition), aged 18 or older. Infosys employees and their families are not eligible.
+Academic requirements
+B.E./B.Tech, M.E./M.Tech or dual degree. The 2025 edition also listed MS (Research), MCA and 5-year integrated MSc. One listing reports no active backlogs.
+Team requirements
+Individual. One HackWithInfy account per participant.
+Geographical restrictions
+India (enrolled in an Indian institution).
+Participation mode
+Online coding rounds (two 3-hour tests), then a 4-day Grand Finale. Finale format: Not verified.
+Themes / domains
+Competitive programming and problem solving.
+Rewards / prizes
+2026 top prizes reported as USD 3,300 / 1,650 / 1,100, plus a pre-placement interview route.
+Important requirements
+Free; no fee at any stage. Register through the official Infosys page or your college placement office.
+Registration timing (as of 7
+Nov 2026)
+2026 edition (2027 batch): registration closed; Grand Finale listed for Nov 2026. Registration opened on 6 Feb in 2025 and 2026; next expected Feb 2027 (third-party).
+TCS CodeVita
+Organising organisation
+Tata Consultancy Services
+Official link
+www.tcscodevita.com/
+Category
+Company-sponsored coding contest
+What it is
+TCS's global coding contest.
+Eligibility and rules
+Not checked this session. Rules differ each edition; confirm eligibility, team size, geography and prizes on the official site before registering.
+\n--- PAGE 8 ---\nArjuna | Hackathons and Competitions | Prepared 7 Nov 2026
+Page 8
+Google Cloud AI Builder Cup 2026 (JAPAC)
+Organising organisation
+Google Cloud with Hack2skill
+Official link
+vision.hack2skill.com/
+Category
+Company-sponsored (restricted: not open to students)
+Eligibility
+Working professionals only, aged 21 or older. Students are NOT eligible; teams containing students can be disqualified even after shortlisting.
+Academic requirements
+Professionals only.
+Team requirements
+2-4 members.
+Geographical restrictions
+JAPAC region; finale in Singapore.
+Participation mode
+Online prototype building, then an in-person Grand Finale in Singapore (4 Dec 2026).
+Themes / domains
+Prototype built on Google Cloud (AI).
+Rewards / prizes
+Total prize pool USD 30,000.
+Important requirements
+Functional prototype using Google Cloud. Details are from a third-party report; the link shown is the host platform, not the contest page.
+Registration timing (as of 7
+Nov 2026)
+Team formation closed 11 Oct 2026 and prototype submission 18 Oct 2026. Listed to show a competition that is not open to students.
+4. AI, Machine Learning & Data Science
+See also Flipkart GRiD (AI Engineering and Data Science tracks, Section 3) and Google Solution Challenge (Build with AI, Section 2).
+Kaggle Competitions
+Organising organisation
+Kaggle (Google)
+Official link
+www.kaggle.com/competitions
+Category
+Machine learning competitions
+What it is
+Data science and ML competitions with datasets, leaderboards and some prizes.
+Eligibility and rules
+Not checked this session. Rules differ each edition; confirm eligibility, team size, geography and prizes on the official site before registering.
+5. Software Development & Coding Competitions
+See also ICPC below and HackWithInfy and TCS CodeVita in Section 3.
+\n--- PAGE 9 ---\nArjuna | Hackathons and Competitions | Prepared 7 Nov 2026
+Page 9
+ICPC (International Collegiate Programming Contest)
+Organising organisation
+ICPC Foundation; Indian regional hosts include Amrita (Amritapuri), GLA University (Mathura) and CSJM University (Kanpur multi-site)
+Official link
+icpc.global/
+Category
+Software development and coding; large-scale international
+Eligibility
+Enrolled university students who meet the ICPC regional rules on years of higher education and prior World Finals participation. A coach certifies eligibility.
+Academic requirements
+University students of any branch.
+Team requirements
+Exactly 3 contestants plus 1 registered coach (faculty or institutional representative), from the same institution.
+Geographical restrictions
+Global. Indian teams compete in Indian regional contests, which can lead to the Asia West championship and the World Finals.
+Participation mode
+Online preliminary round, then an onsite regional contest.
+Themes / domains
+Algorithmic problem solving.
+Rewards / prizes
+Not verified overall. Amritapuri 2026 reported a INR 50,000 cash pool for women-only teams.
+Important requirements
+Teams register through their coach on the ICPC portal. Teams from the same university may be limited in number.
+Registration timing (as of 7
+Nov 2026)
+India 2026 preliminaries ran on 3 Oct 2026 and registration has closed; onsite regionals fall from late Dec 2026 to Jan 2027. Recurring annually; watch icpc.global for 2027.
+CodeChef Contests
+Organising organisation
+CodeChef
+Official link
+www.codechef.com/contests
+Category
+Coding contests
+What it is
+Regular rated programming contests.
+Eligibility and rules
+Not checked this session. Rules differ each edition; confirm eligibility, team size, geography and prizes on the official site before registering.
+Codeforces Contests
+Organising organisation
+Codeforces
+Official link
+codeforces.com/contests
+Category
+Coding contests
+What it is
+Regular rated programming contests widely used for ICPC practice.
+Eligibility and rules
+Not checked this session. Rules differ each edition; confirm eligibility, team size, geography and prizes on the official site before registering.
+HackerEarth Challenges
+Organising organisation
+HackerEarth
+Official link
+www.hackerearth.com/challenges/
+Category
+Coding challenges and hackathons
+What it is
+Hackathons and coding challenges, including company-hosted ones.
+Eligibility and rules
+Not checked this session. Rules differ each edition; confirm eligibility, team size, geography and prizes on the official site before registering.
+\n--- PAGE 10 ---\nArjuna | Hackathons and Competitions | Prepared 7 Nov 2026
+Page 10
+LeetCode Contests
+Organising organisation
+LeetCode
+Official link
+leetcode.com/contest/
+Category
+Coding contests
+What it is
+Weekly and biweekly programming contests.
+Eligibility and rules
+Not checked this session. Rules differ each edition; confirm eligibility, team size, geography and prizes on the official site before registering.
+6. Innovation, Entrepreneurship & Startup Competitions
+Microsoft Imagine Cup
+Organising organisation
+Microsoft
+Official link
+imaginecup.microsoft.com/
+Category
+Student technology and startup competition
+What it is
+Global student competition for building technology ventures.
+Eligibility and rules
+Not checked this session. Rules differ each edition; confirm eligibility, team size, geography and prizes on the official site before registering.
+Hult Prize
+Organising organisation
+Hult Prize Foundation
+Official link
+www.hultprize.org/
+Category
+Social entrepreneurship competition
+What it is
+Global student social-enterprise competition run through campus programmes.
+Eligibility and rules
+Not checked this session. Rules differ each edition; confirm eligibility, team size, geography and prizes on the official site before registering.
+7. Research & Domain-Specific Competitions
+Cybersecurity, space and other specialised domains. NASA Space Apps (Section 1) also fits here.
+\n--- PAGE 11 ---\nArjuna | Hackathons and Competitions | Prepared 7 Nov 2026
+Page 11
+Bharatiya Antariksh Hackathon
+Organising organisation
+ISRO
+Official link
+www.isro.gov.in/
+Category
+Research and domain-specific (space technology)
+Eligibility
+Reported as a national competition for students; exact criteria: Not specified in the sources found.
+Academic requirements
+Students (per third-party report).
+Team requirements
+Not specified in the sources found.
+Geographical restrictions
+India (national competition).
+Participation mode
+Not specified in the sources found.
+Themes / domains
+Real-world space-technology problems.
+Rewards / prizes
+Not specified in the sources found.
+Important requirements
+Watch ISRO announcements for the next edition. The link shown is ISRO's main site; no dedicated page was found.
+Registration timing (as of 7
+Nov 2026)
+The 2026 cycle was reported closed. Check for the next edition.
+CTFtime
+Organising organisation
+CTFtime (community calendar)
+Official link
+ctftime.org/
+Category
+Cybersecurity competitions
+What it is
+Calendar and rankings of capture-the-flag cybersecurity competitions worldwide. Rules differ per CTF.
+Eligibility and rules
+Not checked this session. Rules differ each edition; confirm eligibility, team size, geography and prizes on the official site before registering.
+8. Large-Scale National & International Competitions
+A quick view of the flagship competitions. Full details are in the sections shown.
+Competition
+Scale
+Who can join (summary)
+Full entry
+Smart India Hackathon
+National (India)
+Students in recognised Indian institutions; teams of exactly 6 nominated by the institution
+Section 2
+Google Solution Challenge (India)
+National (India)
+Students aged 18+ enrolled in an Indian college; teams of 1-4
+Section 2
+Flipkart GRiD
+National (India)
+Engineering students in India; batch and team rules set per edition
+Section 3
+HackWithInfy
+National (India)
+Engineering students graduating in the target year, 18+
+Section 3
+ICPC
+International (India regionals)
+Enrolled university students in teams of 3 with a coach, subject to ICPC year limits
+Section 5
+NASA Space Apps Challenge
+Global
+Open to all ages and backgrounds
+Section 1
+Microsoft Imagine Cup
+Global
+Not checked this session
+Section 6
+Hult Prize
+Global
+Not checked this session
+Section 6
+\n--- PAGE 12 ---\nArjuna | Hackathons and Competitions | Prepared 7 Nov 2026
+Page 12
+Competition
+Scale
+Who can join (summary)
+Full entry
+MLH hackathons
+Global
+Event-specific; student-focused
+Section 2
+ETHGlobal
+Global
+Not checked this session
+Section 1
+Kaggle Competitions
+Global
+Competition-specific
+Section 4

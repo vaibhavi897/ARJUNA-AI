@@ -1,0 +1,869 @@
+--- PAGE 1 ---\nArjuna | Job Platforms and Internship Opportunities | Prepared 7 Nov 2026
+Page 1
+Job Platforms, Job Openings & Internship Opportunities
+A resource directory for engineering students and early-career applicants | Arjuna
+How to use this directory. Section 1 lists jobs and Section 2 lists internships; the two are kept separate. A platform that offers both appears in each section with its own purpose. Every link
+is clickable. Links point to the platform's jobs or internships page, or the employer's careers page, wherever one exists.
+About the entries. This is a directory of portals and programmes, not a list of live vacancies, because individual openings close within days or weeks. Where a specific programme was
+found closed, the entry says so and the portal is listed for the next cycle. Eligibility is stated only where it was found; otherwise the entry says it varies. Always confirm eligibility and deadlines
+on the official page before applying.
+Safety. Genuine employers, campus drives and government recruitment do not charge a fee to apply. Apply only through the official links given here.
+\n--- PAGE 2 ---\nArjuna | Job Platforms and Internship Opportunities | Prepared 7 Nov 2026
+Page 2
+Contents
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 3
+1. Job Opportunities
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 3
+1.1 General job-search platforms
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 3
+1.2 Fresher and graduate hiring portals
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 3
+1.3 Startup hiring platforms
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 4
+1.4 Remote and work-from-home jobs
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 4
+1.5 Company career pages - technology and IT services
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 5
+1.6 Investment banking, finance and consulting
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 5
+1.7 Core engineering and non-tech employers
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 6
+1.8 Government and public-sector recruitment
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 7
+2. Internship Opportunities
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 7
+2.1 General internship platforms
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 7
+2.2 Software development internships
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 7
+2.3 AI/ML and data science internships
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 8
+2.4 Web development internships
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 8
+2.5 Research internships
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 8
+2.6 Remote and virtual internships
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 8
+2.7 Startup internships
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 8
+2.8 Government and institutional internships
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 9
+2.9 International internship opportunities
+  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  . 9
+2.10 Company-specific internship programmes
+\n--- PAGE 3 ---\nArjuna | Job Platforms and Internship Opportunities | Prepared 7 Nov 2026
+Page 3
+1. Job Opportunities
+1.1 General job-search platforms
+Large portals for full-time, part-time and entry-level roles across industries.
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+LinkedIn Jobs
+Job - General
+www.linkedin.com/jobs/
+Largest professional network; filter by Entry level,
+remote and location. Apply on LinkedIn or the
+company site.
+Free account; varies by role
+India / International
+Naukri
+Job - General
+www.naukri.com/
+India's largest job portal for freshers and experienced
+professionals.
+Free account; varies by role
+India
+Indeed India
+Job - General
+in.indeed.com/
+Job search engine aggregating company and agency
+listings.
+Varies by listing
+India
+Foundit
+Job - General
+www.foundit.in/
+Indian portal with a fresher section and recruiter
+search.
+Free account; varies by role
+India
+Glassdoor
+Job - General
+www.glassdoor.co.in/Job/index.htm
+Job listings with company reviews and salary data.
+Varies by listing
+India / International
+1.2 Fresher and graduate hiring portals
+Entry-level hiring aimed at students and recent graduates.
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+Naukri Campus
+Job - Fresher
+www.naukri.com/campus
+Naukri's platform for college students: fresher job
+alerts, aptitude tests (NCAT), resume tools. For its
+internship use see Section 2.1.
+College students and fresh
+graduates
+India
+Internshala - Fresher Jobs
+Job - Fresher
+internshala.com/fresher-jobs/
+Entry-level full-time roles for fresh graduates.
+Fresh graduates; varies by role
+India
+Unstop - Jobs
+Job - Fresher
+unstop.com/jobs
+Entry-level jobs and campus hiring challenges from
+companies. Internship listings are in Section 2.1.
+Students and graduates; varies by
+role
+India
+Prosple India
+Job - Graduate
+in.prosple.com
+Graduate-employer directory; 'Apply on employer site'
+sends you to the company's own application form.
+Students and graduates; varies by
+role
+India
+Freshersworld
+Job - Fresher
+www.freshersworld.com/
+Fresher-only listings and off-campus drive alerts.
+Freshers
+India
+Hirist
+Job - Technology
+www.hirist.tech/
+Technology-only job portal from the Info Edge group.
+Varies by role
+India
+1.3 Startup hiring platforms
+Apply directly to startups and growing companies.
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+Wellfound
+Job - Startup
+wellfound.com/jobs
+Startup jobs across engineering, product and design;
+apply directly to founders.
+Free profile; varies by role
+Global / Remote
+options
+Cutshort
+Job - Startup / Tech
+cutshort.io/jobs
+Tech jobs matched to skills; popular with Indian
+startups.
+Free profile; varies by role
+India / Remote
+options
+\n--- PAGE 4 ---\nArjuna | Job Platforms and Internship Opportunities | Prepared 7 Nov 2026
+Page 4
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+Instahyre
+Job - Tech
+www.instahyre.com/
+Curated tech roles where companies contact you
+after you build a profile.
+Free profile; varies by role
+India
+1.4 Remote and work-from-home jobs
+Boards that list remote-first roles.
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+Remote OK
+Job - Remote
+remoteok.com/
+Remote jobs, mainly in tech and digital roles.
+Varies by listing
+Remote / Global
+We Work Remotely
+Job - Remote
+weworkremotely.com/
+Large remote-work job board across programming,
+design and support.
+Varies by listing
+Remote / Global
+Remotive
+Job - Remote
+remotive.com/
+Remote jobs, mostly software and marketing.
+Varies by listing
+Remote / Global
+Himalayas
+Job - Remote
+himalayas.app/jobs
+Remote job listings with company profiles.
+Varies by listing
+Remote / Global
+Working Nomads
+Job - Remote
+www.workingnomads.com/jobs
+Curated remote jobs across tech and non-tech fields.
+Varies by listing
+Remote / Global
+1.5 Company career pages - technology and IT services
+Official careers pages. Use the filters for freshers, graduates or entry level.
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+TCS - All India NQT hiring
+Job - IT services
+www.tcs.com/careers/india/tcs-all-india-nqt-h
+iring
+TCS's national fresher hiring drive (Ninja, Digital,
+Prime). Runs in multiple cycles each year.
+Reported: 2024-2026 batches, up
+to 2 years' experience; confirm for
+the current cycle
+India
+TCS NextStep - Campus
+portal
+Job - IT services
+nextstep.tcs.com/campus/#/
+Registration and application for the TCS drive. Click
+'Apply for Drive' after registering or the application is
+not counted.
+As per the current TCS drive
+India
+Infosys Careers
+Job - IT services
+career.infosys.com/
+Fresher and experienced openings; campus and
+off-campus hiring.
+Varies by role
+India / International
+Wipro Careers
+Job - IT services
+careers.wipro.com/
+Fresher programmes and experienced roles.
+Varies by role
+India / International
+HCLTech Careers
+Job - IT services
+www.hcltech.com/careers
+Graduate trainee and experienced roles.
+Varies by role
+India / International
+Cognizant Careers
+Job - IT services
+careers.cognizant.com/global/en
+Fresher and experienced openings.
+Varies by role
+India / International
+Capgemini India Careers
+Job - IT services
+www.capgemini.com/in-en/careers/
+Graduate and experienced openings in India.
+Varies by role
+India
+Accenture India Careers
+Job - IT services
+www.accenture.com/in-en/careers
+Associate software engineer and consulting roles.
+Varies by role
+India / International
+Google Careers
+Job - Technology
+www.google.com/about/careers/applications/
+Search and apply for Google roles worldwide.
+Varies by role
+International
+Microsoft Careers
+Job - Technology
+careers.microsoft.com/
+Search and apply for Microsoft roles; filter for
+early-career roles.
+Varies by role
+International
+Amazon Jobs
+Job - Technology
+www.amazon.jobs/
+Search and apply for Amazon roles including SDE
+and early-career.
+Varies by role
+International
+Adobe Careers
+Job - Technology
+careers.adobe.com/
+Adobe openings including early-career roles in India.
+Varies by role
+India / International
+\n--- PAGE 5 ---\nArjuna | Job Platforms and Internship Opportunities | Prepared 7 Nov 2026
+Page 5
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+Flipkart Careers
+Job - Technology /
+E-commerce
+www.flipkartcareers.com/
+Open positions across engineering, product and
+business.
+Varies by role
+India
+Atlassian Careers
+Job - Technology
+www.atlassian.com/company/careers
+Atlassian openings, including graduate roles.
+Varies by role
+International /
+Remote options
+1.6 Investment banking, finance and consulting
+Banks and firms that hire engineers for technology, quant and analyst roles.
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+Goldman Sachs - 2027
+Engineering New Analyst
+Job - Investment
+banking
+higher.gs.com/roles/170478
+Role page for the 2027 Engineering New Analyst
+programme in Bengaluru and Hyderabad. This is the
+application route; confirm the posting is still open.
+Reported: final-year students
+graduating in 2027
+India
+Goldman Sachs - India
+Engineering Campus Hiring
+Job - Investment
+banking
+www.goldmansachs.com/careers/students/pr
+ograms/india/engi...
+Official programme page for engineering campus
+hiring. Showed 'applications are now closed' when
+last indexed; reopens each cycle.
+Engineering students; see page for
+the current cycle
+India
+JPMorgan Chase - Careers
+Job - Investment
+banking
+www.jpmorganchase.com/careers/explore-o
+pportunities/progr...
+Technology programme page; this cohort is for
+experienced software engineers and it points
+students to the Software Engineer Program.
+Prior software engineering
+experience (for this cohort)
+India / International
+Morgan Stanley - Students
+and graduates
+Job - Investment
+banking
+www.morganstanley.com/careers/students-g
+raduates
+Analyst programmes for students and graduates.
+See programme pages
+International / India
+Citi Careers
+Job - Banking
+jobs.citi.com/
+Search roles incl. technology and early-career
+positions.
+Varies by role
+International / India
+Barclays Careers
+Job - Banking
+search.jobs.barclays/
+Job search incl. graduate roles and India technology
+hubs.
+Varies by role
+International / India
+Deutsche Bank Careers
+Job - Banking
+careers.db.com/
+Graduate and experienced roles.
+Varies by role
+International / India
+Deloitte India Careers
+Job - Consulting
+www.deloitte.com/in/en/careers.html
+Consulting, technology and advisory roles.
+Varies by role
+India
+1.7 Core engineering and non-tech employers
+For mechanical, civil, electrical, electronics and other branches, and non-IT roles.
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+Larsen & Toubro Careers
+Job - Core
+engineering
+www.larsentoubro.com/corporate/careers/
+Graduate engineer trainee and experienced roles in
+construction and engineering.
+Varies by role
+India / International
+Tata Motors Careers
+Job - Automotive
+careers.tatamotors.com/
+Graduate engineer trainees and experienced hires.
+Varies by role
+India
+Siemens Careers
+Job - Engineering
+jobs.siemens.com/
+Engineering, software and early-career roles.
+Varies by role
+International / India
+Bosch India Careers
+Job - Engineering
+www.bosch.in/careers/
+Engineering and software roles in India.
+Varies by role
+India
+Reliance Careers
+Job - Conglomerate
+careers.ril.com/
+Graduate programmes and roles across Reliance
+businesses.
+Varies by role
+India
+\n--- PAGE 6 ---\nArjuna | Job Platforms and Internship Opportunities | Prepared 7 Nov 2026
+Page 6
+1.8 Government and public-sector recruitment
+Official channels. Genuine government recruitment never charges for applying.
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+National Career Service
+(NCS)
+Job - Government
+www.ncs.gov.in/
+Government of India portal with private and
+government job listings; free for jobseekers.
+Jobseekers; registration is free
+India
+NCS - Job listings
+Job - Government
+ncs.gov.in/job-listing
+Search all domestic jobs with sector and fresher
+filters.
+Registered jobseekers
+India
+NCS - Government jobs
+Job - Government
+ncs.gov.in/job-listing?isGovernmentJob=true
+Listings filtered to government employers.
+Varies by notification
+India
+NCS - International jobs
+(e-Migrate)
+Job - Government /
+International
+ncs.gov.in/e-migrate
+Overseas jobs and advisories for international
+jobseekers.
+See page
+International
+UPSC
+Job - Government
+upsc.gov.in/
+Union Public Service Commission: civil services and
+other central recruitment.
+Per exam notification
+India
+Staff Selection Commission
+(SSC)
+Job - Government
+ssc.gov.in/
+Central government recruitment exams (CGL, CHSL
+and others).
+Per exam notification
+India
+IBPS
+Job - Public-sector
+banking
+www.ibps.in/
+Common recruitment process for public-sector banks.
+Per notification
+India
+SBI Careers
+Job - Public-sector
+banking
+sbi.co.in/web/careers
+State Bank of India current openings.
+Per notification
+India
+\n--- PAGE 7 ---\nArjuna | Job Platforms and Internship Opportunities | Prepared 7 Nov 2026
+Page 7
+2. Internship Opportunities
+2.1 General internship platforms
+Platforms where students find internships across fields. Listed here for their internship function.
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+Internshala - Internships
+Internship - General
+internshala.com/internships/
+India's largest internship platform; filter by field, city,
+stipend and work-from-home.
+Students and recent graduates;
+varies by listing
+India / Remote
+options
+Unstop - Internships
+Internship - General
+unstop.com/internships
+Internships from companies and startups for students.
+Students; varies by listing
+India
+Naukri Campus -
+Internships
+Internship - General
+www.naukri.com/campus
+Internship openings and alerts for college students
+within Naukri Campus.
+College students
+India
+Prosple India - Internships
+Internship - General
+in.prosple.com
+Graduate-employer directory including internship
+programmes; apply on the employer's site.
+Students; varies by employer
+India
+Parker Dewey
+Internship -
+International
+www.parkerdewey.com/
+Short paid 'micro-internships' with US employers.
+Students and recent graduates;
+see site for location rules
+International
+Handshake
+Internship -
+International
+joinhandshake.com/
+Early-career network used by universities and
+employers, mainly in the US.
+Typically students of partner
+institutions
+International
+2.2 Software development internships
+Skill-based internship searches and company programmes.
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+Internshala - Software
+Development
+Internship - Software
+development
+internshala.com/internships/software-develo
+pment-internship/
+Software development internships on Internshala,
+with filters for remote and stipend.
+Varies by listing
+India / Remote
+options
+Amazon - Student
+programs
+Internship - Software
+development
+www.amazon.jobs/en/business_categories/st
+udent-programs
+Internships and new-graduate programmes at
+Amazon, including SDE.
+Varies by program
+International / India
+Google - Student roles
+Internship - Software
+development
+www.google.com/about/careers/applications/
+students/
+Internships and early-career roles at Google.
+Varies by role
+International / India
+Microsoft - Students and
+graduates
+Internship - Software
+development
+careers.microsoft.com/
+Microsoft internships; use the early-career filters on
+the careers site.
+Varies by role
+International / India
+Flipkart - Early careers
+Internship - Software
+development
+www.flipkartcareers.com/
+Flipkart internship and early-career openings.
+Varies by role
+India
+2.3 AI/ML and data science internships
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+Internshala - Data Science
+Internship - Data
+science
+internshala.com/internships/data-science-int
+ernship/
+Data science internships; many are remote.
+Varies by listing
+India / Remote
+options
+Internshala - Machine
+Learning
+Internship - AI/ML
+internshala.com/internships/machine-learnin
+g-internship/
+Machine learning internships from startups and
+companies.
+Varies by listing
+India / Remote
+options
+\n--- PAGE 8 ---\nArjuna | Job Platforms and Internship Opportunities | Prepared 7 Nov 2026
+Page 8
+2.4 Web development internships
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+Internshala - Web
+Development
+Internship - Web
+development
+internshala.com/internships/web-developme
+nt-internship/
+Front-end, back-end and full-stack internships.
+Varies by listing
+India / Remote
+options
+2.5 Research internships
+Research fellowships and lab internships. These recur each year; confirm dates on the official page.
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+Science Academies
+Summer Research
+Fellowship (IAS-INSA-NASI)
+Internship - Research
+www.ias.ac.in/
+Two-month research fellowship under scientists of the
+three science academies. Applications for 2027 were
+reported open until 30 Nov 2026. Apply on ias.ac.in,
+insaindia.res.in or nasi.org.in.
+The 2026 edition listed
+BE/BTech/BCA 2nd-3rd year
+among eligible courses; confirm
+2027 rules
+India
+Chennai Mathematical
+Institute - Summer
+internships
+Internship - Research
+www.cmi.ac.in/admissions/internships.php
+Summer internships in computer science and related
+areas. The 2026 round closed on 15 February 2026;
+watch this page for the next cycle.
+See page
+India
+2.6 Remote and virtual internships
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+Infosys Springboard Virtual
+Internship
+Internship - Remote
+infyspringboard.onwingspan.com/
+Free online internship run on Infosys Springboard; no
+stipend; certificate after project evaluation. Edition 7.0
+closed 31 March 2026; announced inside the portal.
+Class 12 pass or equivalent;
+edition 7.0 listed 2025-2027
+batches; past participants could
+not reapply
+India / Remote
+Google Summer of Code
+Internship - Open
+source / Remote
+summerofcode.withgoogle.com/
+Paid remote open-source programme where
+contributors work with mentoring organisations.
+See programme page each year
+International /
+Remote
+MLH Fellowship
+Internship - Remote
+fellowship.mlh.io/
+Remote fellowship for student developers working on
+open-source and engineering projects.
+See programme page
+International /
+Remote
+2.7 Startup internships
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+Wellfound - Internships
+Internship - Startup
+wellfound.com/jobs
+Startup roles; filter for internship under job type.
+Varies by listing
+Global / Remote
+options
+2.8 Government and institutional internships
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+PM Internship Scheme
+Internship -
+Government
+pminternship.mca.gov.in/
+Government of India internship scheme with
+participating companies.
+See official portal
+India
+NCS - Internship listings
+Internship -
+Government
+ncs.gov.in/Pmis-jobList
+Internship list linked from the National Career Service
+homepage.
+Registered NCS users
+India
+\n--- PAGE 9 ---\nArjuna | Job Platforms and Internship Opportunities | Prepared 7 Nov 2026
+Page 9
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+Apprenticeship India
+(NAPS)
+Internship -
+Apprenticeship
+www.apprenticeshipindia.gov.in/
+Government apprenticeship portal for graduates and
+diploma holders.
+See official portal
+India
+2.9 International internship opportunities
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+AIESEC
+Internship -
+International
+aiesec.org/
+Global youth organisation offering international
+volunteer and professional exchange experiences.
+Young people; see site for age and
+country rules
+International
+Parker Dewey / Handshake
+Internship -
+International
+www.parkerdewey.com/
+See Section 2.1 for both platforms.
+See Section 2.1
+International
+2.10 Company-specific internship programmes
+Official programme pages for investment banks and IT services.
+Name
+Category
+Direct link
+Description
+Eligibility
+Scope
+Goldman Sachs - India
+Engineering Summer
+Analyst
+Internship -
+Investment banking
+www.goldmansachs.com/careers/students/pr
+ograms/india/engi...
+Official programme page for engineering summer
+internships in Bengaluru and Hyderabad. Showed
+'applications are now closed' when last indexed.
+Engineering students; see page for
+the current cycle
+India
+JPMorgan Chase - Software
+Engineer Program
+Internship -
+Investment banking
+www.jpmorganchase.com/careers/explore-o
+pportunities/progr...
+Programme page that points current students to the
+Software Engineer Program (internship and
+graduate). Apply through JPMorgan Chase careers.
+Students; see programme pages
+India / International
+Infosys - Careers
+Internship - IT
+services
+career.infosys.com/
+Infosys openings; the global InStep internship is
+applied for through infosys.com.
+See page
+International / India

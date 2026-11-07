@@ -16,4 +16,5 @@ class CareerConnectSavedItem(Base, TimestampMixin):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     item_type: Mapped[str] = mapped_column(String(24), nullable=False)
     item_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="interested", server_default="interested")
 

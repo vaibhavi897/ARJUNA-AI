@@ -11,8 +11,8 @@ from typing import Any
 import httpx
 from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel, Field, model_validator
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
+from sqlalchemy import select, update
+from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import settings
 from app.models import InterviewSession, Resume, RoleAssessment, User
@@ -311,12 +311,41 @@ async def end_session(session_id: int, body: EndRequest, user: CurrentUser, db: 
             else:
                 session.report = {"sufficient_data": False, "message": "The interview was saved, but there is not enough successfully evaluated answer data for a reliable score. Please try again when AI evaluation is available.", "attempted_count": len(attempted), "integrity_signals": session.integrity_signals}
     db.commit()
+    # One email per interview, and only for a completed session that produced
+    # an analysis. prepare() enforces both and returns None otherwise.
+    #
     # Emailed out of band so a slow or failing mail server never delays the
     # report. interview_email swallows its own errors.
     # Rendered now, while session and user are still attached to this request's
     # database session; only plain strings cross into the background task.
-    background.add_task(interview_email.deliver, interview_email.prepare(session, user))
+    message = interview_email.prepare(session, user)
+    if message and _claim_score_email(db, session):
+        background.add_task(interview_email.deliver, message)
     return _summary(session)
+
+
+def _claim_score_email(db: Session, session: InterviewSession) -> bool:
+    """Mark this session's score email as sent, once.
+
+    The conditional UPDATE is the lock: whichever request flips the column from
+    NULL wins and sends, any concurrent one sees rowcount 0 and stays quiet.
+    The mark is never cleared, so a retried or duplicated "end interview" call
+    cannot produce a second email.
+    """
+    stamped = dt.datetime.now(dt.timezone.utc).isoformat()
+    result = db.execute(
+        update(InterviewSession)
+        .where(
+            InterviewSession.id == session.id,
+            InterviewSession.score_email_sent_at.is_(None),
+        )
+        .values(score_email_sent_at=stamped)
+    )
+    db.commit()
+    if result.rowcount != 1:
+        return False
+    session.score_email_sent_at = stamped
+    return True
 
 
 # ---------------------------------------------------------------- recording

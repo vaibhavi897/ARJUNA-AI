@@ -1,7 +1,12 @@
 """The short interview summary emailed to the student once a session ends.
 
-Content comes only from the stored report — nothing is invented. When a report
-could not be produced, the email says so plainly rather than inventing a score.
+Exactly one email per interview. :func:`prepare` refuses a session that is not
+completed, one whose report carries no analysis (``sufficient_data`` false),
+and one already marked ``score_email_sent_at``; the caller claims that mark
+with a conditional UPDATE before handing the message to the background task,
+so concurrent "end interview" calls cannot both send.
+
+Content comes only from the stored report — nothing is invented.
 
 The recording is linked, never attached: a 40-minute capture runs to a few
 hundred megabytes, far past what mail servers accept. The link points at the
@@ -111,6 +116,15 @@ def prepare(session: InterviewSession, user: User) -> dict[str, str] | None:
     message is built here and only plain strings are handed on.
     """
     if not mailer.is_configured():
+        return None
+    # Only a finished interview that actually produced an analysis is emailed.
+    # A session that ended without enough data for a report gets nothing: there
+    # is no score to report, and the transcript is on the report page anyway.
+    if session.status != "completed":
+        return None
+    if not (session.report or {}).get("sufficient_data"):
+        return None
+    if session.score_email_sent_at:
         return None
     to = (getattr(user, "email", "") or "").strip() or (settings.ALERT_EMAIL_TO or "").strip()
     if not to or "@" not in to:

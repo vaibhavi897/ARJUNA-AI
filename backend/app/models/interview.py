@@ -28,6 +28,12 @@ class InterviewSession(Base, TimestampMixin):
     integrity_signals: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
     report: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
+    # Set once, when the score email for this session has been handed to the
+    # mailer. It is claimed with a conditional UPDATE so two concurrent "end
+    # interview" calls can never both send, and it is never cleared: one
+    # completed interview means at most one email.
+    score_email_sent_at: Mapped[str | None] = mapped_column(String(40), nullable=True)
+
     # --- Optional recording. Captured only with consent, held in Supabase
     # Storage (private bucket) and auto-deleted once it expires. ---
     recording_path: Mapped[str | None] = mapped_column(String(300), nullable=True)

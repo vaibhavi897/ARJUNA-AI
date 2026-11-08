@@ -1,7 +1,6 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }],
   "functions": {
-    "api/index.py": {
+    "api/[...path].py": {
       "maxDuration": 300,
       "excludeFiles": "{tests/**,uploads/**,scripts/**,alembic/**,**/__pycache__/**,.venv/**}"
     }

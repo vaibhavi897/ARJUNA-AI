@@ -16,7 +16,7 @@ Deploy the **backend first**, because the frontend needs its address.
 - A password with `@ # / %` in it must be percent-encoded inside `DATABASE_URL` (`@` becomes `%40`).
 
 ## 1. Backend project (`arjuna-api`)
-1. vercel.com > Add New > Project > import this repo > **Root Directory: `backend`**. Vercel reads `backend/vercel.json`, `backend/api/index.py` and `backend/requirements.txt`.
+1. vercel.com > Add New > Project > import this repo > **Root Directory: `backend`**. Vercel reads `backend/vercel.json`, `backend/api/[...path].py` (the catch-all entry that serves every `/api/...` request) and `backend/requirements.txt`.
 2. Environment variables (Settings > Environment Variables):
    - `DATABASE_URL`: the Supabase Session pooler string
    - `JWT_SECRET`: a long random string (for example 64 characters)
@@ -24,7 +24,8 @@ Deploy the **backend first**, because the frontend needs its address.
    - `GEMINI_API_KEY`, `SARVAM_API_KEY`, and the `SMTP_*` values if you use email
    - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` if you want interview recording (also create a **private** Storage bucket named `interview-recordings`)
    - Do **not** set `UPLOAD_DIR`; on Vercel it automatically uses `/tmp`.
-3. Deploy. Then open `https://<arjuna-api>.vercel.app/health`. It should answer with status ok.
+3. Deploy. Then open `https://<arjuna-api>.vercel.app/api/health`. It should answer with status ok. (Only `/api/...` paths reach the backend on Vercel, so `/` and `/docs` show a 404. That is expected.)
+4. Prefer **Connect Git** (Project Settings > Git) over drag-and-drop uploads, so every push to GitHub redeploys automatically.
 
 ## 2. Frontend project (`arjuna-web`)
 1. Add New > Project > same repo > **Root Directory: `frontend`**. The rest comes from `frontend/vercel.json`.

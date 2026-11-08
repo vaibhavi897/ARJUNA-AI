@@ -101,6 +101,7 @@ async def db_error_handler(request: Request, exc: SQLAlchemyError) -> JSONRespon
 
 
 @app.get("/health", tags=["system"])
+@app.get("/api/health", tags=["system"], include_in_schema=False)
 def health() -> dict[str, Any]:
     """Liveness plus a real database check."""
     db_ok = True

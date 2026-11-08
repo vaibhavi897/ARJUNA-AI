@@ -7,7 +7,9 @@ services:
     rootDir: backend
     plan: free               # free tier: sleeps after 15 min idle, 512 MB RAM, no persistent disk (see docs/DEPLOYMENT.md)
     buildCommand: pip install -r requirements.txt
-    startCommand: python -m alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    # Bind the port straight away (Render fails the deploy if nothing listens in time) and run migrations alongside.
+    # A failed migration is printed in the logs as MIGRATION FAILED instead of silently killing the service.
+    startCommand: (python -m alembic upgrade head 2>&1 || echo "MIGRATION FAILED - see the lines above") & exec uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION

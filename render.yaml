@@ -1,25 +1,21 @@
-# Render blueprint for the FastAPI backend. Create it from the Render dashboard: New > Blueprint > pick this repo.
+# Render blueprint for the FastAPI backend (free plan). Create it from the Render dashboard: New > Blueprint > pick this repo.
 # Secrets marked sync: false are typed into the dashboard, never committed.
 services:
   - type: web
     name: arjuna-api
     runtime: python
     rootDir: backend
-    plan: starter            # a paid plan: it keeps the service awake and allows the persistent disk below
+    plan: free               # free tier: sleeps after 15 min idle, 512 MB RAM, no persistent disk (see docs/DEPLOYMENT.md)
     buildCommand: pip install -r requirements.txt
     startCommand: python -m alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
-    disk:
-      name: arjuna-uploads
-      mountPath: /var/data
-      sizeGB: 5
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.8
       - key: ENVIRONMENT
         value: production
       - key: UPLOAD_DIR
-        value: /var/data/uploads
+        value: /tmp/uploads      # not persistent on the free plan; parsed resume data lives in the database
       - key: JWT_SECRET
         generateValue: true
       - key: DATABASE_URL

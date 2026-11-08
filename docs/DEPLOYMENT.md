@@ -17,7 +17,11 @@ Everything below that needs a login is done by you in each dashboard; the repo a
    - `GEMINI_API_KEY`, `SARVAM_API_KEY`, and the `SMTP_*` values if you use email
    - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` if you want interview recording
    - `JWT_SECRET` is generated for you
-3. The plan is Starter because the persistent disk (resume uploads) and always-on service need a paid plan. On a free plan, uploads vanish on restart and the first request after idle is slow.
+3. The blueprint uses Render's **free** plan, so there is nothing to pay. Know the limits:
+   - It goes to sleep after 15 minutes without traffic and the first request afterwards takes about a minute to wake it. To keep it awake for demos, make a free monitor at uptimerobot.com that opens `https://<service>.onrender.com/health` every 5 minutes (the free 750 hours a month cover one always-on service).
+   - It has 512 MB of memory. The app uses roughly 250 MB at start, which fits, but very heavy use at once could run it out.
+   - There is no persistent disk, so the original resume files are lost whenever the service restarts. What was read from them (skills, projects, experience) is stored in the database and is not lost. Interview recordings use Supabase Storage and are not affected.
+   - For a paid, always-on setup later, change `plan` to `starter` and add a `disk` mounted at `/var/data` with `UPLOAD_DIR=/var/data/uploads`.
 4. When it is live, `https://<service>.onrender.com/health` should answer.
 
 ## 3. Frontend on Vercel

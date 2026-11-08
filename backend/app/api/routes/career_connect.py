@@ -31,14 +31,17 @@ def get_directory() -> dict:
     jobs = _load("job_platforms.json")
     internships = _load("internship_programs.json")
     competitions = _load("competitions.json")
+    certifications = _load("certifications.json")
     return {
         "jobs": jobs,
         "internships": internships,
         "competitions": competitions,
+        "certifications": certifications,
         "counts": {
             "jobs": len(jobs),
             "internships": len(internships),
             "competitions": len(competitions),
+            "certifications": len(certifications),
         },
     }
 

@@ -1,5 +1,5 @@
 /** Typed client for the Dynamic Resume Builder. */
-import { ApiError, getToken, request } from "./api";
+import { API_BASE, ApiError, getToken, request } from "./api";
 
 export type Entry = { title: string; right: string; subtitle: string; subright: string; bullets: string[]; source?: { ref?: string } };
 export type Line = { label: string; text: string };
@@ -33,7 +33,7 @@ export const rb = {
 
 async function blobOf(path: string, init: RequestInit = {}): Promise<{ blob: Blob; filename: string | null }> {
   const token = getToken();
-  const res = await fetch(`/api${base}${path}`, { ...init, headers: { ...(init.headers || {}), ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(init.body ? { "Content-Type": "application/json" } : {}) } });
+  const res = await fetch(`${API_BASE}${base}${path}`, { ...init, headers: { ...(init.headers || {}), ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(init.body ? { "Content-Type": "application/json" } : {}) } });
   if (!res.ok) {
     let detail = `Request failed (${res.status})`;
     try { const j = await res.json(); if (typeof j?.detail === "string") detail = j.detail; } catch { /* keep default */ }

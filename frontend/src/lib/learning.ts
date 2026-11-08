@@ -1,5 +1,5 @@
 /** Typed client for the AI Learning Hub. All calls go through the shared `request`. */
-import { getToken, request } from "./api";
+import { API_BASE, getToken, request } from "./api";
 
 export type Category = "learn" | "practice" | "project" | "revision" | "assessment" | "milestone" | "rest";
 export type TaskStatus = "pending" | "completed" | "partial" | "skipped" | "rescheduled";
@@ -130,7 +130,7 @@ async function nb<T>(path: string, method: "GET" | "POST" | "PATCH" | "DELETE", 
   if (auth) headers.Authorization = `Bearer ${auth}`;
   if (token) headers["X-Notebook-Token"] = token;
   if (body !== undefined) headers["Content-Type"] = "application/json";
-  const res = await fetch(`/api${path}`, { method, headers, body: form ?? (body !== undefined ? JSON.stringify(body) : undefined) });
+  const res = await fetch(`${API_BASE}${path}`, { method, headers, body: form ?? (body !== undefined ? JSON.stringify(body) : undefined) });
   if (res.status === 204) return undefined as T;
   const data = await res.json().catch(() => null);
   if (!res.ok) {

@@ -7,7 +7,12 @@
  */
 
 export const TOKEN_KEY = "arjuna.access_token";
-const API_BASE = "/api";
+/**
+ * In development the Vite proxy forwards /api to FastAPI. In production set VITE_API_BASE at build time to the
+ * backend's address ending in /api (for example https://arjuna-api.onrender.com/api); the backend's CORS_ORIGINS
+ * must then include this site's address.
+ */
+export const API_BASE: string = ((import.meta.env.VITE_API_BASE as string | undefined) ?? "").trim().replace(/\/+$/, "") || "/api";
 
 export class ApiError extends Error {
   status: number;

@@ -21,6 +21,16 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def _normalize_database_url(cls, value: object) -> object:
+        """Hosts hand out ``postgres://`` or ``postgresql://`` URLs; this app uses the psycopg 3 driver."""
+        if isinstance(value, str):
+            for prefix in ("postgres://", "postgresql://"):
+                if value.startswith(prefix):
+                    return "postgresql+psycopg://" + value[len(prefix):]
+        return value
+
     @field_validator("DEBUG", mode="before")
     @classmethod
     def _normalize_debug_environment(cls, value: object) -> object:

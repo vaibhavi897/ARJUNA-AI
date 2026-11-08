@@ -294,6 +294,25 @@ def test_youtube_with_and_without_transcript(client, auth):
     assert client.post("/api/learning/youtube", json={"url": "https://vimeo.com/1"}, headers=auth).status_code == 422
 
 
+def test_video_summaries_and_own_notes_are_filed_in_my_notes(client, auth):
+    ok = client.post("/api/learning/youtube", json={"url": "https://youtu.be/aaaaaaaaaaa"}, headers=auth).json()
+    nbs = client.get("/api/learning/notebooks", headers=auth).json()["items"]
+    yt = next(n for n in nbs if n["title"] == "YouTube Notes")           # created on first use
+    pages = client.get(f"/api/learning/notebooks/{yt['id']}/index", headers=auth).json()["pages"]
+    assert [p["page_no"] for p in pages] == [1, 2]                        # Welcome + the summary, correctly numbered
+    # regenerating does not file the summary a second time
+    client.post(f"/api/learning/youtube/{ok['id']}/summarise", headers=auth)
+    assert len(client.get(f"/api/learning/notebooks/{yt['id']}/index", headers=auth).json()["pages"]) == 2
+    # the student's own notes: one page per video, updated in place, timestamps become links
+    assert client.put(f"/api/learning/youtube/{ok['id']}/notes", json={"content": "   "}, headers=auth).json() == {"saved": False}
+    a = client.put(f"/api/learning/youtube/{ok['id']}/notes", json={"content": "Idea\n[1:05] key point"}, headers=auth).json()
+    b = client.put(f"/api/learning/youtube/{ok['id']}/notes", json={"content": "Idea\n[1:05] key point\n[12:00:09] later"}, headers=auth).json()
+    assert a["saved"] and a["page_no"] == b["page_no"] == 3 and a["notebook"] == "YouTube Notes"
+    page = client.get(f"/api/learning/notebooks/{yt['id']}/pages/3", headers=auth).json()
+    assert "[1:05](https://www.youtube.com/watch?v=aaaaaaaaaaa&t=65s)" in page["content"] and "&t=43209s)" in page["content"]
+    assert client.put("/api/learning/youtube/999999/notes", json={"content": "x"}, headers=auth).status_code == 404
+
+
 # ------------------------------------------------------------------ quizzes
 def test_quiz_scoring_report_mastery_and_retry(client, auth):
     q = client.post("/api/learning/quizzes", json={"topic": "SQL Joins", "count": 5, "types": ["mcq", "true_false", "output_prediction", "short_answer", "coding"]}, headers=auth)
@@ -322,6 +341,15 @@ def test_quiz_scoring_report_mastery_and_retry(client, auth):
     assert again["score"] == rep["score"]  # submitting twice cannot change the score
     results = client.get(f"/api/learning/quizzes/{quiz['id']}/results", headers=auth).json()
     assert results["quiz"]["questions"][0].get("answer_key") is not None  # revealed only after submission
+    # the review lists EVERY question, right and wrong, in order, with the student's answer beside the correct one
+    review = results["review"]
+    assert [r["position"] for r in review] == sorted(r["position"] for r in review) and len(review) == len(quiz["questions"])
+    by_type = {r["qtype"]: r for r in review}
+    assert by_type["mcq"]["status"] == "correct" and by_type["mcq"]["your_answer"] == {"choice": 1} and by_type["mcq"]["correct"]["index"] == 1
+    assert by_type["true_false"]["status"] == "wrong" and by_type["true_false"]["your_answer"] == {"value": False} and by_type["true_false"]["correct"]["value"] is True
+    assert by_type["coding"]["status"] == "correct" and by_type["coding"]["correct"].get("reference_solution")
+    assert {r["status"] for r in review} <= {"correct", "wrong", "partial", "skipped", "ungraded"}
+    assert sum(1 for r in review if r["status"] == "correct") == rep["correct"]
     prog = client.get("/api/learning/progress", headers=auth).json()
     assert prog["mastery"] and prog["mastery"][0]["status"] in prog["status_labels"] and prog["quiz_trend"]
     assert client.get("/api/learning/revisions", headers=auth).json()["items"]

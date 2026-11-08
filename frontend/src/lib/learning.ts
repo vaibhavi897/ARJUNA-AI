@@ -1,5 +1,6 @@
 /** Typed client for the AI Learning Hub. All calls go through the shared `request`. */
 import { API_BASE, getToken, request } from "./api";
+import type { ReviewItem } from "../components/learning/QuizReview";
 
 export type Category = "learn" | "practice" | "project" | "revision" | "assessment" | "milestone" | "rest";
 export type TaskStatus = "pending" | "completed" | "partial" | "skipped" | "rescheduled";
@@ -97,6 +98,7 @@ export const lh = {
   nbIndex: (id: number, t?: string) => nb<NbIndex>(`/learning/notebooks/${id}/index`, "GET", undefined, t),
   page: (id: number, no: number, t?: string) => nb<Page>(`/learning/notebooks/${id}/pages/${no}`, "GET", undefined, t),
   addPage: (id: number, body: unknown, t?: string) => nb<Page>(`/learning/notebooks/${id}/pages`, "POST", body, t),
+  saveVideoNotes: (importId: number, content: string) => request<{ saved: boolean; notebook_id?: number; notebook?: string; page_no?: number }>(`/learning/youtube/${importId}/notes`, { method: "PUT", body: { content } }),
   savePage: (id: number, no: number, body: unknown, t?: string) => nb<Page>(`/learning/notebooks/${id}/pages/${no}`, "PATCH", body, t),
   deletePage: (id: number, no: number, t?: string) => nb<void>(`/learning/notebooks/${id}/pages/${no}`, "DELETE", undefined, t),
   history: (id: number, no: number, t?: string) => nb<{ items: { id: number; title: string; content: string; saved_at: string }[] }>(`/learning/notebooks/${id}/pages/${no}/history`, "GET", undefined, t),
@@ -114,7 +116,7 @@ export const lh = {
   createQuiz: (body: unknown) => request<Quiz>("/learning/quizzes", j(body)),
   quiz: (id: number) => request<Quiz>(`/learning/quizzes/${id}`),
   submitQuiz: (id: number, answers: Record<number, unknown>) => request<Report>(`/learning/quizzes/${id}/submit`, j({ answers })),
-  results: (id: number) => request<{ report: Report; quiz: Quiz }>(`/learning/quizzes/${id}/results`),
+  results: (id: number) => request<{ report: Report; quiz: Quiz; review: ReviewItem[] }>(`/learning/quizzes/${id}/results`),
   retryQuiz: (id: number) => request<Quiz>(`/learning/quizzes/${id}/retry`, { method: "POST" }),
   revisions: () => request<{ items: { topic: string; due: string; interval_days: number; ease: number; repetitions: number; lapses: number; overdue: boolean }[] }>("/learning/revisions"),
   settings: () => request<{ interval_scale: number; preferred_depth: string }>("/learning/settings"),

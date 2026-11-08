@@ -1,8 +1,9 @@
 /** YouTube Summariser: structured study notes from the transcript. */
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { BookmarkPlus, BookOpen, Briefcase, ClipboardPaste, ExternalLink, Layers, Link2, ListChecks, Loader2, Play, RefreshCw, Search, Wrench } from "lucide-react";
 import { Badge, Button, Card, EmptyState, ErrorState, InlineNote } from "../../components/ui";
 import { SaveToNotebook } from "../../components/learning/SaveToNotebook";
+import VideoStudy, { type PlayerApi } from "../../components/learning/VideoStudy";
 import { Skeleton, useLoad } from "../../components/learning/shared";
 import { lh, type Video } from "../../lib/learning";
 import { cn } from "../../lib/utils";
@@ -52,7 +53,7 @@ function MiniQuiz({ quiz }: { quiz: Summary["quiz"] }) {
   );
 }
 
-function Notes({ s, url }: { s: Summary; url: string }) {
+function Notes({ s, url, onSeek }: { s: Summary; url: string; onSeek?: (seconds: number) => void }) {
   const [filter, setFilter] = useState("");
   const concepts = s.concepts ?? [], terms = s.terminology ?? [], apps = s.applications ?? [];
   const shownTerms = useMemo(() => terms.filter((t) => !filter || `${t.term} ${t.definition}`.toLowerCase().includes(filter.toLowerCase())).sort((a, b) => a.term.localeCompare(b.term)), [terms, filter]);
@@ -86,7 +87,7 @@ function Notes({ s, url }: { s: Summary; url: string }) {
                   <div className="min-w-0 flex-1"><h5 className="font-extrabold leading-snug text-forest-900">{c.name}</h5>
                     <p className="mt-1 text-sm leading-6 text-ink-700">{c.explanation}</p>
                     {c.why_it_matters ? <p className="mt-2 rounded-lg bg-amber-50 px-3 py-1.5 text-xs text-amber-900"><b>Why it matters:</b> {c.why_it_matters}</p> : null}
-                    {c.timestamp_seconds != null ? <a href={`${url}&t=${Math.floor(c.timestamp_seconds)}s`} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 font-mono text-[11px] font-bold text-brand-700 underline">Watch this part {ts(c.timestamp_seconds)}</a> : null}</div></div>
+                    {c.timestamp_seconds != null ? (onSeek ? <button type="button" onClick={() => onSeek(Math.floor(c.timestamp_seconds!))} className="mt-2 inline-flex items-center gap-1 font-mono text-[11px] font-bold text-brand-700 underline">Watch this part {ts(c.timestamp_seconds)}</button> : <a href={`${url}&t=${Math.floor(c.timestamp_seconds)}s`} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 font-mono text-[11px] font-bold text-brand-700 underline">Watch this part {ts(c.timestamp_seconds)}</a>) : null}</div></div>
               </li>))}
           </ol>
         </Section>
@@ -114,7 +115,7 @@ function Notes({ s, url }: { s: Summary; url: string }) {
             <li key={i} className="relative">
               <span className="absolute -left-[27px] top-1.5 h-3 w-3 rounded-full border-2 border-white bg-brand-500" aria-hidden />
               <div className="rounded-2xl border border-line bg-white p-4">
-                <div className="flex flex-wrap items-center gap-3"><a href={`${url}&t=${Math.floor(c.start_seconds)}s`} target="_blank" rel="noreferrer" className="rounded-lg bg-forest-800 px-2.5 py-1 font-mono text-xs font-bold text-white hover:bg-forest-700">{ts(c.start_seconds)}</a><h5 className="font-extrabold">{c.title}</h5></div>
+                <div className="flex flex-wrap items-center gap-3">{onSeek ? <button type="button" onClick={() => onSeek(Math.floor(c.start_seconds))} className="rounded-lg bg-forest-800 px-2.5 py-1 font-mono text-xs font-bold text-white hover:bg-forest-700">{ts(c.start_seconds)}</button> : <a href={`${url}&t=${Math.floor(c.start_seconds)}s`} target="_blank" rel="noreferrer" className="rounded-lg bg-forest-800 px-2.5 py-1 font-mono text-xs font-bold text-white hover:bg-forest-700">{ts(c.start_seconds)}</a>}<h5 className="font-extrabold">{c.title}</h5></div>
                 <p className="mt-2 text-sm leading-6 text-ink-700">{c.summary}</p>
                 {c.key_points.length ? <ul className="mt-2 list-disc space-y-0.5 pl-5 text-sm text-ink-600">{c.key_points.map((k, n) => <li key={n}>{k}</li>)}</ul> : null}
               </div>
@@ -149,6 +150,7 @@ export default function YouTube() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);
+  const player = useRef<PlayerApi>(null);
   const hist = useLoad(() => lh.videos(), []);
 
   async function run(fn: () => Promise<Video>) {
@@ -179,9 +181,11 @@ export default function YouTube() {
             {cur.thumbnail ? <img src={cur.thumbnail} alt="" className="h-24 w-40 rounded-xl object-cover" /> : null}
             <div className="min-w-0 flex-1"><h3 className="text-xl font-extrabold text-forest-900">{cur.title ?? "Untitled video"}</h3><p className="text-sm text-ink-500">{cur.channel}</p>
               <div className="mt-2 flex flex-wrap items-center gap-2"><Badge tone={cur.transcript_status === "unavailable" ? "warn" : "brand"}>{cur.transcript_status === "pasted" ? "Pasted transcript" : cur.transcript_status === "available" ? "Captions found" : "No captions"}</Badge><a href={cur.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-brand-700 underline">Open on YouTube <ExternalLink size={12} /></a>
-                {s ? <Button size="sm" variant="outline" icon={<BookmarkPlus size={14} />} onClick={() => setSaveOpen(true)}>Save to notebook</Button> : null}
+                {s ? <Button size="sm" variant="outline" icon={<BookmarkPlus size={14} />} onClick={() => setSaveOpen(true)}>Copy to another notebook</Button> : null}
                 {s && cur.segments ? <Button size="sm" variant="ghost" icon={<RefreshCw size={14} />} onClick={() => run(() => lh.resummarise(cur.id))}>Regenerate</Button> : null}</div></div>
           </header>
+
+          <VideoStudy key={cur.video_id} ref={player} video={cur} />
 
           {!s ? (
             <div className="space-y-3">
@@ -193,7 +197,7 @@ export default function YouTube() {
           ) : (
             <>
               {oldFormat && cur.segments ? <InlineNote tone="brand">This summary was made in the older, shorter format. <button className="font-extrabold underline" onClick={() => run(() => lh.resummarise(cur.id))}>Regenerate it</button> to get concepts to learn, terminology and applications.</InlineNote> : null}
-              <Notes s={s} url={cur.url} />
+              <Notes s={s} url={cur.url} onSeek={(sec) => { player.current?.seek(sec); document.getElementById("watch")?.scrollIntoView({ behavior: "smooth", block: "center" }); }} />
             </>
           )}
           <SaveToNotebook open={saveOpen} onClose={() => setSaveOpen(false)} kind="video" id={cur.id} />

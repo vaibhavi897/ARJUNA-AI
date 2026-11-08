@@ -1,4 +1,5 @@
 /** Quizzes & Assessments: generate, take, review. Scoring happens on the server. */
+import QuizReview, { type ReviewItem } from "../../components/learning/QuizReview";
 import CodeEditor from "../../components/CodeEditor";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -127,7 +128,7 @@ function Taking({ quiz, onDone }: { quiz: Quiz; onDone: (r: Report) => void }) {
 }
 
 // ------------------------------------------------------------------ results
-function Results({ r, onRetry, onNew, onRevision, retrying }: { r: Report; onRetry: () => void; onNew: () => void; onRevision: () => void; retrying: boolean }) {
+function Results({ r, review, onRetry, onNew, onRevision, retrying }: { r: Report; review: ReviewItem[] | null; onRetry: () => void; onNew: () => void; onRevision: () => void; retrying: boolean }) {
   const tone = r.accuracy >= 75 ? "text-emerald-600" : r.accuracy >= 50 ? "text-amber-600" : "text-rose-600";
   const rows = (r.by_topic.length ? r.by_topic : []).map((t) => ({ name: t.topic.length > 28 ? t.topic.slice(0, 27) + "…" : t.topic, accuracy: t.accuracy }));
   return (
@@ -152,6 +153,7 @@ function Results({ r, onRetry, onNew, onRevision, retrying }: { r: Report; onRet
           <div><h3 className="text-sm font-extrabold text-forest-800">Recommended revisions</h3><ul className="mt-1.5 space-y-1 text-sm">{r.recommended_revisions.map((x, i) => <li key={i}><b>{x.topic}</b> <span className="text-ink-500">· {x.reason}</span></li>)}</ul></div>
         </Card>
       </div>
+      {review ? <QuizReview items={review} /> : (
       <Card className="space-y-4 p-5">
         <h3 className="font-extrabold text-forest-900">Review your answers {r.incorrect.length ? `(${r.incorrect.length} to learn from)` : ""}</h3>
         {!r.incorrect.length ? <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-4 font-bold text-emerald-800"><CheckCircle2 />Everything correct. Try a harder quiz.</div> : r.incorrect.map((w) => (
@@ -168,6 +170,7 @@ function Results({ r, onRetry, onNew, onRevision, retrying }: { r: Report; onRet
             </div>
           </details>))}
       </Card>
+      )}
       <div className="flex justify-center"><Button variant="outline" onClick={onNew}>Build another quiz</Button></div>
     </div>
   );
@@ -180,28 +183,29 @@ export default function Quizzes() {
   const [mode, setMode] = useState<"home" | "taking" | "results">("home");
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [report, setReport] = useState<Report | null>(null);
+  const [review, setReview] = useState<ReviewItem[] | null>(null);
   const [busy, setBusy] = useState(false);
   const hist = useLoad(() => lh.quizzes(), [mode]);
   const openResult = useCallback(async (id: number) => {
-    try { const r = await lh.results(id); setQuiz(r.quiz); setReport(r.report); setMode("results"); } catch (e) { push({ title: "Could not open results", description: (e as Error).message, variant: "error" }); }
+    try { const r = await lh.results(id); setQuiz(r.quiz); setReport(r.report); setReview(r.review); setMode("results"); } catch (e) { push({ title: "Could not open results", description: (e as Error).message, variant: "error" }); }
   }, [push]);
   useEffect(() => { const id = params.get("result"); if (id) { openResult(Number(id)); } }, [params, openResult]);
 
   async function retry() {
     if (!quiz) return;
     setBusy(true);
-    try { const q = await lh.retryQuiz(quiz.id); setQuiz(q); setReport(null); setMode("taking"); window.scrollTo({ top: 0 }); }
+    try { const q = await lh.retryQuiz(quiz.id); setQuiz(q); setReport(null); setReview(null); setMode("taking"); window.scrollTo({ top: 0 }); }
     catch (e) { push({ title: "Could not create a retry", description: (e as Error).message, variant: "error" }); } finally { setBusy(false); }
   }
   async function revision() {
     setBusy(true);
-    try { const q = await lh.createQuiz({ scope: "revision", count: 8, difficulty: "mixed", types: ["mcq", "true_false", "short_answer"], level: "intermediate" }); setQuiz(q); setReport(null); setMode("taking"); }
+    try { const q = await lh.createQuiz({ scope: "revision", count: 8, difficulty: "mixed", types: ["mcq", "true_false", "short_answer"], level: "intermediate" }); setQuiz(q); setReport(null); setReview(null); setMode("taking"); }
     catch (e) { push({ title: "No revision quiz yet", description: (e as Error).message, variant: "info" }); } finally { setBusy(false); }
   }
   const home = () => { setMode("home"); setQuiz(null); setReport(null); if (params.get("result")) setParams({}); };
 
-  if (mode === "taking" && quiz) return <Taking quiz={quiz} onDone={(r) => { setReport(r); setMode("results"); lh.results(quiz.id).then((x) => setQuiz(x.quiz)).catch(() => undefined); }} />;
-  if (mode === "results" && report) return <Results r={report} retrying={busy} onRetry={retry} onNew={home} onRevision={revision} />;
+  if (mode === "taking" && quiz) return <Taking quiz={quiz} onDone={(r) => { setReport(r); setMode("results"); lh.results(quiz.id).then((x) => { setQuiz(x.quiz); setReview(x.review); }).catch(() => undefined); }} />;
+  if (mode === "results" && report) return <Results r={report} review={review} retrying={busy} onRetry={retry} onNew={home} onRevision={revision} />;
   return (
     <div className="space-y-5">
       <Config onStart={(q) => { setQuiz(q); setMode("taking"); window.scrollTo({ top: 0 }); }} />

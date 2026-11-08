@@ -9,6 +9,8 @@ encryption: page text is stored in the database unencrypted.
 
 from __future__ import annotations
 
+import re
+
 import datetime as dt
 import time
 from pathlib import Path
@@ -111,6 +113,7 @@ def create_notebook(db: Session, user: User, title: str, cover: str, description
     db.flush()
     db.add(NotebookChapter(notebook_id=nb.id, title="General", position=0))
     db.add(NotebookPage(notebook_id=nb.id, page_no=1, title="Welcome", content=f"# {nb.title}\n\nThis is your first page. Write anything, or save AI notes and video summaries here."))
+    db.flush()  # the Welcome page must exist before add_page numbers the next one
     events.log(db, user.id, "notebook_created", "notebook", nb.id)
     return nb
 
@@ -274,3 +277,55 @@ def pages_from_upload(path: Path, ext: str, max_chars: int = 5000) -> list[tuple
     if cur.strip():
         chunks.append(cur.strip())
     return [(f"{path.stem[:60]} (part {i})" if len(chunks) > 1 else path.stem[:80], c) for i, c in enumerate(chunks[:40], 1)]
+
+
+# ------------------------------------------------------------------ YouTube notes land in My Notes automatically
+YOUTUBE_NOTEBOOK = "YouTube Notes"
+_STAMP = re.compile(r"\[((?:\d{1,2}:)?\d{1,2}:\d{2})\]")
+
+
+def youtube_notebook(db: Session, user: User) -> Notebook:
+    """The student's own unlocked 'YouTube Notes' notebook, created the first time it is needed."""
+    nb = db.scalar(select(Notebook).where(Notebook.user_id == user.id, Notebook.title == YOUTUBE_NOTEBOOK, Notebook.lock_hash.is_(None)).order_by(Notebook.id))
+    if nb is not None:
+        return nb
+    return create_notebook(db, user, YOUTUBE_NOTEBOOK, "ocean", "Summaries and your own notes from the videos you studied", "Videos", ["youtube"], None)
+
+
+def _find_page(db: Session, nb: Notebook, source_type: str, source_ref: int) -> NotebookPage | None:
+    return db.scalar(select(NotebookPage).where(NotebookPage.notebook_id == nb.id, NotebookPage.source_type == source_type, NotebookPage.source_ref == source_ref))
+
+
+def sync_video_summary(db: Session, user: User, y: Any) -> NotebookPage | None:
+    """Put a summarised video's study notes in My Notes once. An existing page is never overwritten, because the student may have edited it."""
+    if not y.summary:
+        return None
+    nb = youtube_notebook(db, user)
+    page = _find_page(db, nb, "youtube", y.id)
+    if page is not None:
+        return page
+    return add_page(db, nb, y.title or "Video notes", video_to_markdown(y.title, y.url, y.summary), None, "youtube", y.id, None, ["video summary"])
+
+
+def _link_stamps(notes: str, url: str) -> str:
+    def repl(m: re.Match[str]) -> str:
+        parts = [int(x) for x in m.group(1).split(":")]
+        sec = parts[0] * 3600 + parts[1] * 60 + parts[2] if len(parts) == 3 else parts[0] * 60 + parts[1]
+        return f"[{m.group(1)}]({url}{'&' if '?' in url else '?'}t={sec}s)"
+    return _STAMP.sub(repl, notes)
+
+
+def save_video_notes(db: Session, user: User, y: Any, notes: str) -> NotebookPage | None:
+    """The student's own notes beside a video: one page per video, updated as they type. [mm:ss] markers become links."""
+    notes = (notes or "").strip()
+    nb = youtube_notebook(db, user)
+    page = _find_page(db, nb, "video_notes", y.id)
+    if not notes and page is None:
+        return None
+    title = f"My notes: {(y.title or 'Video')[:170]}"
+    content = f"# {title}\n\nVideo: {y.url}\n\n{_link_stamps(notes, y.url)}\n" if notes else (page.content if page else "")
+    if page is None:
+        return add_page(db, nb, title, content, None, "video_notes", y.id, None, ["video notes"])
+    if notes:
+        update_page(db, page, {"title": title, "content": content})
+    return page

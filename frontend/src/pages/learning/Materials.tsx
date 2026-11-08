@@ -63,7 +63,7 @@ export default function Materials() {
           <div><p className="mb-1.5 text-xs font-bold text-ink-500">Level</p><div className="flex gap-1.5">{LEVELS.map((l) => <button key={l} aria-pressed={level === l} onClick={() => setLevel(l)} className={cn("flex-1 rounded-lg border px-2 py-1.5 text-xs font-extrabold capitalize", level === l ? "border-forest-800 bg-forest-800 text-white" : "border-line-strong bg-white text-ink-600")}>{l}</button>)}</div></div>
           <div><p className="mb-1.5 text-xs font-bold text-ink-500">Depth</p><div className="flex gap-1.5">{DEPTHS.map(([k, l]) => <button key={k} aria-pressed={depth === k} onClick={() => setDepth(k)} className={cn("flex-1 rounded-lg border px-2 py-1.5 text-xs font-extrabold", depth === k ? "border-brand-600 bg-brand-600 text-white" : "border-line-strong bg-white text-ink-600")}>{l}</button>)}</div></div>
           <Button fullWidth loading={busy === "generate"} disabled={topic.trim().length < 2} onClick={() => generate()} icon={<Sparkles size={16} />}>Generate notes</Button>
-          <p className="text-[11px] text-ink-400">Written by Gemini on request and saved. The same request reopens instantly without regenerating.</p>
+          <p className="text-[11px] text-ink-400">Saved for you. The same request reopens instantly without regenerating.</p>
         </Card>
         <Card className="space-y-3 p-5">
           <div className="relative"><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-300" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search saved materials" className="input-base pl-9" aria-label="Search saved materials" /></div>

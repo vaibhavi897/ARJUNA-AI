@@ -76,8 +76,8 @@ const SETTING: Record<string, string> = {
 };
 const TOOL_EMOJI: [RegExp, string][] = [
   [/excel|sheet|spreadsheet|model/i, "📊"], [/bloomberg|capiq|factset|market|terminal/i, "📈"], [/outlook|email|gmail/i, "📧"],
-  [/powerpoint|slides|deck|pitch|think-cell/i, "📽️"], [/word|memo|docs?|report/i, "📝"], [/sql|database|postgres|warehouse|snowflake|bigquery/i, "🗄️"],
-  [/python|r|jupyter|pandas|code|vs ?code|git|github|ide/i, "⌨️"], [/figma|sketch|illustrator|photoshop|canva/i, "🎨"], [/zoom|teams|meet|call|phone/i, "🎥"],
+  [/powerpoint|slides|deck|pitch|think-cell/i, "📽️"], [/word|memo|docs?\b|report/i, "📝"], [/sql|database|postgres|warehouse|snowflake|bigquery/i, "🗄️"],
+  [/python|r\b|jupyter|pandas|code|vs ?code|git|github|ide/i, "⌨️"], [/figma|sketch|illustrator|photoshop|canva/i, "🎨"], [/zoom|teams|meet|call|phone/i, "🎥"],
   [/slack/i, "💬"], [/tableau|power ?bi|looker|dashboard|grafana/i, "📉"], [/jira|confluence|notion|tracker|roadmap/i, "🗂️"], [/docker|kubernetes|terraform|ci\/cd/i, "🐳"],
   [/aws|azure|gcp|cloud/i, "☁️"], [/siem|splunk|edr|crowdstrike|wireshark|nessus|scan/i, "🛡️"], [/erp|sap|oracle|ledger/i, "🧾"], [/crm|salesforce|hubspot/i, "👥"],
   [/lab|instrument/i, "🔬"], [/contract|agreement|legal|manupatra/i, "⚖️"],

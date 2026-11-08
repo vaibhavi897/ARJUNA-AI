@@ -484,6 +484,7 @@ def yt_import(body: YoutubeIn, user: CurrentUser, db: DbSession) -> dict[str, An
         y.summary = ai.summarise_video(y.title or "", youtube.to_prompt_text(segs))
         y.model = settings.GEMINI_MODEL
         events.log(db, user.id, "youtube_summarised", "youtube", y.id)
+        notebooks.sync_video_summary(db, user, y)
     db.commit()
     return {**_yt_out(y), "reason": reason, "needs_transcript": not segs}
 
@@ -507,8 +508,26 @@ def yt_summarise(import_id: int, user: CurrentUser, db: DbSession, body: Youtube
         y.transcript, y.transcript_status = segments, transcript_status
     y.summary = ai.summarise_video(y.title or "", youtube.to_prompt_text(y.transcript))
     y.model = settings.GEMINI_MODEL
+    notebooks.sync_video_summary(db, user, y)
     db.commit()
     return _yt_out(y)
+
+
+class VideoNotesIn(BaseModel):
+    content: str = Field(default="", max_length=60_000)
+
+
+@router.put("/youtube/{import_id}/notes")
+def yt_notes(import_id: int, body: VideoNotesIn, user: CurrentUser, db: DbSession) -> dict[str, Any]:
+    """Keep the student's own notes for a video in My Notes (YouTube Notes notebook), one page per video."""
+    y = db.scalar(select(YoutubeImport).where(YoutubeImport.id == import_id, YoutubeImport.user_id == user.id))
+    if y is None:
+        raise HTTPException(status_code=404, detail="Import not found.")
+    page = notebooks.save_video_notes(db, user, y, body.content)
+    db.commit()
+    if page is None:
+        return {"saved": False}
+    return {"saved": True, "notebook_id": page.notebook_id, "notebook": notebooks.YOUTUBE_NOTEBOOK, "page_no": page.page_no}
 
 
 @router.get("/youtube/{import_id}")
@@ -775,7 +794,7 @@ def quiz_results(quiz_id: int, user: CurrentUser, db: DbSession) -> dict[str, An
     s = _quiz(db, user, quiz_id)
     if s.status != "submitted":
         raise HTTPException(status_code=409, detail="Submit the quiz to see results.")
-    return {"report": s.report, "quiz": quizzes.session_out(s, reveal=True)}
+    return {"report": s.report, "quiz": quizzes.session_out(s, reveal=True), "review": quizzes.review(db, s)}
 
 
 @router.post("/quizzes/{quiz_id}/retry", status_code=201)

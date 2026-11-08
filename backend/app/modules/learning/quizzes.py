@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import datetime as dt
 from typing import Any
 
@@ -23,8 +25,16 @@ class QuizError(RuntimeError):
     pass
 
 
+# A question whose text or explanation shows the model second-guessing its own working ("Wait, let's recalculate...")
+# usually has an answer key that does not match its own maths. Better to drop it than to mark a student wrong.
+_SELF_DOUBT = re.compile(r"\b(wait|hmm+|oops|let me (re)?(check|calculate|think|try)|let's (re)?(check|calculate|adjust|use|try|make)|ah,|adjust the (options|weights|numbers)|not (there|in the options)|re-?calculate)\b", re.I)
+
+
 def _valid(q: dict[str, Any]) -> dict[str, Any] | None:
     """Normalise one generated question into DB fields, or reject it."""
+    if _SELF_DOUBT.search(str(q.get("explanation") or "")) or _SELF_DOUBT.search(str(q.get("prompt") or "")):
+        logger.info("dropped question: its own text shows unresolved working")
+        return None
     t = q["qtype"]
     key: dict[str, Any] = {}
     rubric: list[dict[str, Any]] = []
@@ -216,3 +226,43 @@ def build_report(db: Session, user: User, s: QuizSession, overtime: bool = False
         "by_topic": by_topic, "by_subtopic": by_sub, "strong_areas": strong, "weak_areas": weak, "incorrect": wrong,
         "recommended_revisions": [{"topic": w, "reason": "Scored below 60% in this assessment."} for w in weak] or [{"topic": "Keep going", "reason": "No weak areas detected this time. Try a harder quiz."}],
     }
+
+
+def _answered(resp: dict[str, Any]) -> bool:
+    for k in ("choice", "value", "text", "code"):
+        v = resp.get(k)
+        if v is None:
+            continue
+        if isinstance(v, str) and not v.strip():
+            continue
+        return True
+    return False
+
+
+def review(db: Session, s: QuizSession) -> list[dict[str, Any]]:
+    """Every question with the student's answer, the right answer and the outcome, in quiz order."""
+    attempts = {a.question_id: a for a in db.scalars(select(QuizAttempt).where(QuizAttempt.session_id == s.id))}
+    out: list[dict[str, Any]] = []
+    for q in sorted(s.questions, key=lambda x: x.position):
+        a = attempts.get(q.id)
+        resp = (a.response if a else {}) or {}
+        if a is None:
+            status = "skipped"
+        elif a.evaluated_by == "unavailable":
+            status = "ungraded"
+        elif a.is_correct:
+            status = "correct"
+        elif not _answered(resp):
+            status = "skipped"
+        elif a.score > 0:
+            status = "partial"
+        else:
+            status = "wrong"
+        out.append({
+            "question_id": q.id, "position": q.position, "qtype": q.qtype, "difficulty": q.difficulty, "topic": q.topic, "subtopic": q.subtopic,
+            "prompt": q.prompt, "options": q.options, "points": q.points, "status": status,
+            "score": a.score if a else 0, "your_answer": resp,
+            "correct": ({"reference_solution": q.answer_key.get("reference_solution")} if q.qtype in ("coding", "debugging") else dict(q.answer_key)),
+            "explanation": q.explanation, "rubric": q.rubric, "feedback": (a.feedback if a else {}) or {},
+        })
+    return out

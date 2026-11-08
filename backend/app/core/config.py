@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -73,7 +74,8 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:5173"
 
     # --- Uploads ---
-    UPLOAD_DIR: str = str(BACKEND_DIR / "uploads")
+    # Vercel's project folder is read-only; /tmp is the only writable place there (and is not shared between instances).
+    UPLOAD_DIR: str = "/tmp/uploads" if os.environ.get("VERCEL") else str(BACKEND_DIR / "uploads")
     MAX_UPLOAD_SIZE_MB: int = 5
 
     # --- Optional LLM provider (qualitative analysis). Unset => deterministic only.

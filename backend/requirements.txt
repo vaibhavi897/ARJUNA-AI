@@ -1,5 +1,5 @@
 fastapi>=0.120.0
-uvicorn[standard]>=0.38.0
+uvicorn>=0.38.0
 sqlalchemy>=2.0.44
 alembic>=1.17.0
 psycopg[binary]>=3.2.12
@@ -13,10 +13,6 @@ pypdf>=6.1.0
 python-docx>=1.2.0
 httpx>=0.28.1
 google-genai>=1.30.0
-scikit-learn>=1.5.0
-pandas>=2.2.0
-numpy>=2.0.0
 youtube-transcript-api>=1.0.0
 reportlab>=4.2.0
-matplotlib>=3.9.0
 fonttools>=4.53.0

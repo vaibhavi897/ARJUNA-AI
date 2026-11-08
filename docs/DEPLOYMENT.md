@@ -1,44 +1,47 @@
-# Deploying ARJUNA AI
+# Deploying ARJUNA AI on Vercel (frontend and backend) with Supabase
 
-Frontend on **Vercel**, backend on **Render**, database and file storage on **Supabase**.
-Everything below that needs a login is done by you in each dashboard; the repo already holds the config.
+Two Vercel projects from the same GitHub repo, plus the Supabase database you already use.
 
-## 1. Database (Supabase, which the project already uses)
-- Your current `DATABASE_URL` already points at Supabase (the Session pooler, port 5432). That pooler address works from Render as it is: copy the same value into Render.
-- Decide whether production should share that database. If it does, the live site shows the same accounts and data as your team's development, including test accounts. For a clean public site, create a second Supabase project, copy its Session pooler string (Project Settings > Database > Connection string > Session pooler), and let the backend create the tables on first start (`alembic upgrade head` runs automatically).
-- To bring the existing data across instead: `pg_restore --no-owner --no-acl -d "<connection string>" arjuna_ai_backup.dump`.
-- Interview recordings: in the same Supabase project create a **private** Storage bucket named `interview-recordings`, then set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` on Render. Without them recording stays hidden. The service-role key is a secret: it goes only into Render's dashboard, never into the repo or the frontend.
+| Project | Root Directory | What it is |
+|---|---|---|
+| `arjuna-api` | `backend` | FastAPI as a serverless function |
+| `arjuna-web` | `frontend` | the React site |
 
-## 2. Backend on Render
-1. render.com > New > Blueprint > choose this GitHub repo. It reads `render.yaml`.
-2. Fill in the secrets it asks for:
+Deploy the **backend first**, because the frontend needs its address.
+
+## 0. Database (Supabase)
+- Your `DATABASE_URL` already points at Supabase (the Session pooler, port 5432). Reuse it, or create a second Supabase project for a clean public site and copy its Session pooler string.
+- Migrations are **not** run by the host. Run them yourself from your computer against whichever database you chose:
+  `cd backend` then `python -m alembic upgrade head` (with that database in `.env`). The shared database is already at the latest version.
+- A password with `@ # / %` in it must be percent-encoded inside `DATABASE_URL` (`@` becomes `%40`).
+
+## 1. Backend project (`arjuna-api`)
+1. vercel.com > Add New > Project > import this repo > **Root Directory: `backend`**. Vercel reads `backend/vercel.json`, `backend/api/index.py` and `backend/requirements.txt`.
+2. Environment variables (Settings > Environment Variables):
    - `DATABASE_URL`: the Supabase Session pooler string
-   - `CORS_ORIGINS`: your Vercel address, e.g. `https://arjuna-ai.vercel.app` (add more with commas; no trailing slash)
+   - `JWT_SECRET`: a long random string (for example 64 characters)
+   - `CORS_ORIGINS`: the frontend address you will get in step 2 (add it after step 2, then redeploy). No trailing slash. Several are separated by commas.
    - `GEMINI_API_KEY`, `SARVAM_API_KEY`, and the `SMTP_*` values if you use email
-   - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` if you want interview recording
-   - `JWT_SECRET` is generated for you
-3. The blueprint uses Render's **free** plan, so there is nothing to pay. Know the limits:
-   - It goes to sleep after 15 minutes without traffic and the first request afterwards takes about a minute to wake it. To keep it awake for demos, make a free monitor at uptimerobot.com that opens `https://<service>.onrender.com/health` every 5 minutes (the free 750 hours a month cover one always-on service).
-   - It has 512 MB of memory. The app uses roughly 250 MB at start, which fits, but very heavy use at once could run it out.
-   - There is no persistent disk, so the original resume files are lost whenever the service restarts. What was read from them (skills, projects, experience) is stored in the database and is not lost. Interview recordings use Supabase Storage and are not affected.
-   - For a paid, always-on setup later, change `plan` to `starter` and add a `disk` mounted at `/var/data` with `UPLOAD_DIR=/var/data/uploads`.
-4. When it is live, `https://<service>.onrender.com/health` should answer.
+   - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` if you want interview recording (also create a **private** Storage bucket named `interview-recordings`)
+   - Do **not** set `UPLOAD_DIR`; on Vercel it automatically uses `/tmp`.
+3. Deploy. Then open `https://<arjuna-api>.vercel.app/health`. It should answer with status ok.
 
-## 3. Frontend on Vercel
-1. vercel.com > Add New > Project > import this repo.
-2. **Root Directory: `frontend`.** The rest comes from `frontend/vercel.json` (Vite, `npm install --legacy-peer-deps`, output `dist`).
-3. Environment variable: `VITE_API_BASE` = `https://<service>.onrender.com/api` (with `/api` at the end).
-4. Deploy. Then put the Vercel address into the backend's `CORS_ORIGINS` and redeploy the backend.
+## 2. Frontend project (`arjuna-web`)
+1. Add New > Project > same repo > **Root Directory: `frontend`**. The rest comes from `frontend/vercel.json`.
+2. Environment variable: `VITE_API_BASE` = `https://<arjuna-api>.vercel.app/api` (ending in `/api`).
+3. Deploy. Copy the site address, add it to the backend's `CORS_ORIGINS`, and redeploy the backend.
 
-The frontend talks to the backend directly, so long AI calls (the 100-day plan can take minutes) are not cut off by a proxy.
+## 3. Check it
+- Open the site, register, upload a resume. The browser console must show no CORS errors (a CORS error means `CORS_ORIGINS` does not match the site address exactly).
+- Camera and microphone features need HTTPS, which Vercel provides.
 
-## 4. Check it
-- Open the Vercel address, register an account, upload a resume.
-- Open the browser console: no CORS errors. A CORS error means `CORS_ORIGINS` does not match the site address exactly.
-- Camera and microphone features need HTTPS, which both hosts provide.
+## What is different on Vercel (read this)
+- **Time limit.** Each request can run at most `maxDuration` seconds (set to 300 in `backend/vercel.json`). The 100-day plan and the interview report take the longest. If Vercel rejects the number for your plan during deploy, lower it (for example to 60); long AI jobs may then time out on that plan.
+- **No saved files.** The original uploaded resume file is not kept after the request. What was read from it (skills, projects, experience) is saved in the database. Interview recordings use Supabase Storage, not disk.
+- **Cold starts.** The first request after a quiet period is slower while the function starts.
+- **Package size.** To fit Vercel's size limit, scikit-learn, pandas and matplotlib were removed. The text-matching code in `app/modules/textsim.py` gives the same scores as scikit-learn, and the resume fonts are shipped in `app/modules/resume_builder/assets`.
+- **Rate limits** are kept in memory, so they apply per function instance, not across all of them.
 
 ## Things to watch
-- Never commit `.env`. Keys live only in the Render and Vercel dashboards.
+- Never commit `.env`. Keys live only in the Vercel dashboard.
 - Do not deploy test accounts with weak passwords.
-- Interview recordings use Supabase Storage if `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set; otherwise recording is hidden.
-- Each teammate's `alembic upgrade head` and the production one share the same migration files; run migrations only through the deploy, not by hand against production.

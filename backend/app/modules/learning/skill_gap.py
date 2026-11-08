@@ -11,8 +11,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+from app.modules import textsim
 from sqlalchemy.orm import Session
 
 from app.core.logging_config import get_logger
@@ -43,9 +42,7 @@ def analyse(db: Session, user: User, track: LearningTrack, skip: list[str] | Non
 
     scores: dict[str, float] = {}
     if text.strip() and topics:
-        vec = TfidfVectorizer(stop_words="english", ngram_range=(1, 2), sublinear_tf=True)
-        m = vec.fit_transform([t.title for t in topics] + [text])
-        sims = cosine_similarity(m[-1], m[:-1]).ravel()
+        sims = textsim.similarities([t.title for t in topics], text)
         scores = {t.slug: float(s) for t, s in zip(topics, sims)}
 
     matched, missing = [], []

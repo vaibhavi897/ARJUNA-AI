@@ -6,7 +6,6 @@ import datetime as dt
 from collections import defaultdict
 from typing import Any
 
-import pandas as pd
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -107,10 +106,11 @@ def progress(db: Session, user: User) -> dict[str, Any]:
         heat[at.date().isoformat()]["tasks"] += 1
     weekly = []
     if rows:
-        df = pd.DataFrame({"d": [pd.Timestamp(r[0]).tz_localize(None).normalize() for r in rows]})
-        df["week"] = df["d"].dt.to_period("W-SUN").dt.start_time
-        g = df.groupby("week").size().reset_index(name="tasks")
-        weekly = [{"week": r.week.date().isoformat(), "tasks": int(r.tasks)} for r in g.itertuples()]
+        by_week: dict[dt.date, int] = defaultdict(int)
+        for r in rows:
+            day = r[0].date()
+            by_week[day - dt.timedelta(days=day.weekday())] += 1
+        weekly = [{"week": w.isoformat(), "tasks": n} for w, n in sorted(by_week.items())]
     quizzes = list(db.scalars(select(QuizSession).where(QuizSession.user_id == user.id, QuizSession.status == "submitted").order_by(QuizSession.submitted_at)))
     prof = list(db.scalars(select(TopicProficiency).where(TopicProficiency.user_id == user.id).order_by(TopicProficiency.mastery_score.desc())))
     counts = {k: 0 for k in STATUS_LABEL}

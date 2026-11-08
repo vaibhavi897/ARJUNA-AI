@@ -19,8 +19,7 @@ import json
 import re
 from typing import Any
 
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+from app.modules import textsim
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -146,9 +145,7 @@ def _component_cosines(student_texts: dict[str, str], careers: list[Career]) -> 
             for c in careers:
                 out[c.id][comp] = 0.0
             continue
-        vec = TfidfVectorizer(ngram_range=(1, 2), stop_words="english", sublinear_tf=True, token_pattern=r"(?u)\b[\w+#.]{2,}\b")
-        matrix = vec.fit_transform(corpus + [student])
-        sims = cosine_similarity(matrix[-1], matrix[:-1]).ravel()
+        sims = textsim.similarities(corpus, student, token_pattern=textsim.SKILL_TOKEN)
         for c, s in zip(careers, sims):
             out[c.id][comp] = float(s)
     return out

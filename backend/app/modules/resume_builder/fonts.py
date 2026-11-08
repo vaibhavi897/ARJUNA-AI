@@ -21,9 +21,7 @@ EXTRA = {0x2013: "emdash", 0x2014: "endash", 0x2018: "quoteleft", 0x2019: "quote
 
 
 def _source_dir() -> Path:
-    import matplotlib
-
-    return Path(matplotlib.__file__).parent / "mpl-data" / "fonts" / "ttf"
+    return Path(__file__).parent / "assets"
 
 
 def _derive(src: Path, dst: Path) -> None:

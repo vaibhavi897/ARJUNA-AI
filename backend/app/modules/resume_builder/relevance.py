@@ -14,8 +14,7 @@ import datetime as dt
 import re
 from typing import Any, Literal
 
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+from app.modules import textsim
 from sqlalchemy.orm import Session
 
 from app.core.logging_config import get_logger
@@ -108,12 +107,7 @@ def score_items(items: list[P.Item], analysis: dict[str, Any], title: str, jd: s
     job_text = " ".join([title, jd or "", " ".join(keywords)])
     cos: list[float] = [0.0] * len(items)
     if items and tokens(job_text):
-        try:
-            vec = TfidfVectorizer(stop_words="english", ngram_range=(1, 2), sublinear_tf=True, token_pattern=r"(?u)\b[\w+#.]{2,}\b")
-            m = vec.fit_transform([it.text for it in items] + [job_text])
-            cos = [float(x) for x in cosine_similarity(m[-1], m[:-1]).ravel()]
-        except ValueError:
-            pass
+        cos = textsim.similarities([it.text for it in items], job_text, token_pattern=textsim.SKILL_TOKEN)
     w_cos, w_kw, w_rec, w_imp = (0.40, 0.30, 0.10, 0.20) if role in IMPACT_HEAVY else (0.50, 0.30, 0.10, 0.10)
     out: dict[str, dict[str, Any]] = {}
     for it, c in zip(items, cos):

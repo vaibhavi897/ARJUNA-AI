@@ -304,7 +304,6 @@ async def end_session(session_id: int, body: EndRequest, user: CurrentUser, db: 
                     "weaknesses": list(dict.fromkeys(x for a in evaluated for x in (a["evaluation"].get("improvements") or []))),
                     "improvement_areas": [], "skill_gaps": [], "preparation_recommendations": [],
                     "question_feedback": [{"question": a.get("question"), "answer": a.get("text"), **a.get("evaluation", {})} for a in evaluated],
-                    "report_note": "Detailed recommendations could not be generated. Scores use only Gemini evaluations already saved for attempted answers.",
                     "attempted_count": len(attempted), "integrity_signals": session.integrity_signals,
                     "communication": interview_speech.analyse(attempted),
                 }

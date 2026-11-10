@@ -113,10 +113,6 @@ export function RecordingPlayer({
           className="mt-4 aspect-video w-full rounded-xl bg-forest-900"
         />
       ) : null}
-
-      <p className="mt-3 text-2xs leading-5 text-ink-400">
-        Stored privately and removed automatically once the retention period ends. Only you can play it back.
-      </p>
     </Card>
   );
 }
